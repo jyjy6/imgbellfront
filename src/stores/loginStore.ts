@@ -9,16 +9,24 @@ export const useLoginStore = defineStore("login", () => {
   const isLogin = ref(false);
   const user = ref<UserInfo | null>();
   const router = useRouter();
+  const storedToken = localStorage.getItem("accessToken");
 
   // ✅ 앱이 실행될 때 로컬 스토리지에서 유저 정보 불러오기
   const loadUserFromLocalStorage = () => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      user.value = JSON.parse(storedUser);
-      isLogin.value = true; // 로그인 상태 유지
-      console.log("로그인됨");
+    if (storedUser && storedToken) {
+      try {
+        // 토큰 만료 체크도 여기에 가능
+        // const decodedToken: any = jwtDecode(storedToken);
+        user.value = JSON.parse(storedUser);
+        isLogin.value = true;
+      } catch (e) {
+        console.error("토큰 디코딩 실패", e);
+        logout();
+      }
     }
   };
+  loadUserFromLocalStorage();
 
   const login = async (
     username: string,
@@ -39,15 +47,17 @@ export const useLoginStore = defineStore("login", () => {
         if (decodedToken.userInfo) {
           user.value = JSON.parse(decodedToken.userInfo); // 🔥 userInfo가 JSON으로 들어있음
         }
+        console.log(isLogin.value);
 
         isLogin.value = true;
+        console.log(isLogin.value);
 
         // ✅ 로컬 스토리지에 저장 (새로고침 시 유지)
         localStorage.setItem("user", JSON.stringify(user.value));
         localStorage.setItem("accessToken", accessToken);
 
         alert("로그인 성공!");
-        router.push("/").then(() => window.location.reload());
+        router.go(-1);
       } else {
         alert(response.data.message || "로그인 실패!");
       }
@@ -68,8 +78,6 @@ export const useLoginStore = defineStore("login", () => {
   const logout = async () => {
     try {
       // 1. 쿠키 삭제 (HTTP Only 쿠키는 서버 도움 필요->refreshToken은 서버에서 처리하나, 여기선 학습용으로 명시적으로써놓음)
-      document.cookie =
-        "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       document.cookie =
         "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 

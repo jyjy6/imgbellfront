@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useLoginStore } from "../stores/loginStore";
 
 const router = useRouter();
 
@@ -20,7 +21,7 @@ const recentSearches = ref<{ query: string; options?: any }[]>(
 const popularTags = ref([]);
 
 // 사용자 상태 (실제 구현에서는 스토어나 인증 서비스에서 가져옴)
-const isLoggedIn = ref(false);
+const loginStore = useLoginStore();
 const userAvatar = ref("/path/to/default/avatar.jpg");
 
 // 검색 옵션
@@ -133,18 +134,12 @@ const applySearchOptions = () => {
 };
 
 const navigateToUpload = () => {
-  if (isLoggedIn.value) {
+  if (loginStore.isLogin) {
     router.push("/upload");
   } else {
     // 비로그인 상태면 로그인 페이지로 리다이렉트하거나 모달 표시
     router.push("/login?redirect=upload");
   }
-};
-
-const logout = () => {
-  // 로그아웃 로직 구현
-  isLoggedIn.value = false;
-  router.push("/");
 };
 </script>
 
@@ -321,14 +316,14 @@ const logout = () => {
         <template v-slot:activator="{ props }">
           <v-btn v-bind="props" icon class="ml-2">
             <v-avatar color="surface-variant" size="36">
-              <v-icon v-if="!isLoggedIn">mdi-account</v-icon>
+              <v-icon v-if="!loginStore.isLogin">mdi-account</v-icon>
               <v-img v-else :src="userAvatar" alt="사용자 아바타"></v-img>
             </v-avatar>
           </v-btn>
         </template>
 
         <v-list>
-          <template v-if="isLoggedIn">
+          <template v-if="loginStore.isLogin">
             <v-list-item to="/profile">
               <v-list-item-title>프로필</v-list-item-title>
             </v-list-item>
@@ -342,7 +337,7 @@ const logout = () => {
               <v-list-item-title>설정</v-list-item-title>
             </v-list-item>
             <v-divider></v-divider>
-            <v-list-item @click="logout">
+            <v-list-item @click="loginStore.logout()">
               <v-list-item-title>로그아웃</v-list-item-title>
             </v-list-item>
           </template>
