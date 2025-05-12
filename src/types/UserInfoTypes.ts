@@ -16,13 +16,14 @@ export interface UserInfo {
   premiumExpiryDate?: string; // ISO 날짜 문자열
   roles: string;
   isSuperAdmin: boolean;
+  sex: string;
+  age: number;
 }
 
 export interface UserInfoForm {
-  id: number;
+  username: string;
   name: string;
   password: string;
-  username: string;
   email: string;
   displayName: string;
   phone?: string;
@@ -30,4 +31,6 @@ export interface UserInfoForm {
   country?: string;
   mainAddress?: string;
   subAddress?: string;
+  sex: string;
+  age: number;
 }

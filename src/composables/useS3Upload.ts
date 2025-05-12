@@ -43,7 +43,7 @@ export const useS3Upload = () => {
       });
 
       const response = await axios.post(
-        "/api/upload",
+        "/api/image/upload",
         {
           file: fileBase64,
           filename: file.name,

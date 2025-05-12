@@ -78,6 +78,14 @@
         ]"
         :required="!props.isPut"
       />
+      <v-select
+        v-model="form.sex"
+        :items="['남자', '여자']"
+        label="성별"
+        outlined
+      />
+
+      <v-text-field v-model="form.age" label="나이" type="number" outlined />
 
       <v-text-field v-model="form.phone" label="전화번호" />
 
@@ -94,17 +102,17 @@
       <div v-if="props.isPut">
         <p>현재 프로필이미지</p>
         <v-img
-          :src="props.formData?.profileImage"
+          :src="props.formData?.profileImage?.[0]"
           alt="업로드된 이미지"
           max-width="300"
           class="preview"
           style="margin-top: 0"
         />
       </div>
-      <div v-if="props.formData?.profileImage != form.profileImage">
+      <div v-if="imageMetadataForms && imageMetadataForms[0]?.previewUrl">
         <p>NEW 프로필이미지</p>
         <v-img
-          :src="form.profileImage"
+          :src="imageMetadataForms[0]?.previewUrl"
           alt="업로드된 이미지"
           max-width="300"
           class="preview"
@@ -112,13 +120,15 @@
         />
       </div>
       <h3>프로필 이미지 업로드</h3>
-      <!-- <input
-        type="file"
-        id="file"
-        @change="handleFileUpload($event)"
+
+      <v-file-input
+        v-model="files"
+        label="이미지 업로드"
         accept="image/*"
-        style="margin-bottom: 20px"
-      /> -->
+        multiple
+        prepend-icon="mdi-camera"
+        @change="handleFileSelect"
+      ></v-file-input>
 
       <v-checkbox
         v-if="!props.isPut"
@@ -157,22 +167,29 @@ import { useRouter } from "vue-router";
 import type { UserInfoForm } from "../types/UserInfoTypes";
 import { useLoginStore } from "../stores/loginStore";
 import axios from "axios";
+import { useImageS3Upload } from "../composables/useImageS3Upload";
 
 const props = defineProps<{
   //수정시에 들어오는 기존 폼의 데이타
   apiURL: string;
-  formData?: Partial<UserInfoForm>;
+  formData?: UserInfoForm;
   isPut?: boolean;
 }>();
+
+const { files, imageMetadataForms, handleFileSelect, uploadImages } =
+  useImageS3Upload();
 
 const valid = ref(false);
 const passwordConfirm = ref("");
 const termsAgreed = ref(false);
-const form = ref<Partial<UserInfoForm>>({
+const form = ref<UserInfoForm>({
   username: "",
+  name: "",
   password: "",
   email: "",
   displayName: "",
+  sex: "",
+  age: 0,
   phone: "",
   profileImage: "",
   country: "",
@@ -183,7 +200,7 @@ const form = ref<Partial<UserInfoForm>>({
 watch(
   () => props.formData,
   () => {
-    form.value = { ...props.formData };
+    form.value = { ...props.formData } as UserInfoForm;
     //폼에는 props.formData의 딥카피본으로 업데이트. -> 그냥 form.value=props.fromData해버리면
     // 새로운 프로필이미지를 업로드할 시 v-img의 프로필 이미지(기존 프로필이미지)까지 변경되어버리기때문에.
   }
@@ -315,6 +332,7 @@ const router = useRouter();
 
 const loginStore = useLoginStore();
 const submitForm = async () => {
+  console.log(form.value);
   if (!props.isPut && !isUsernameDuplicateChecked.value) {
     alert("아이디 중복 확인이 필요합니다.");
     return;
@@ -323,6 +341,8 @@ const submitForm = async () => {
     alert("닉네임 중복 확인이 필요합니다.");
     return;
   }
+  const profileImageURL = await uploadImages(true);
+  form.value.profileImage = profileImageURL as string;
 
   if (props.isPut) {
     form.value.username = props.formData?.username as string;
@@ -348,6 +368,8 @@ const submitForm = async () => {
         form.value
       );
       console.log(response.data);
+      console.log("회원가입됨" + form.value);
+      console.log(form.value.profileImage);
       alert("회원가입이 완료되었습니다!");
       router.push("/login");
     } catch (error) {

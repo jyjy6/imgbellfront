@@ -22,7 +22,7 @@ const popularTags = ref([]);
 
 // 사용자 상태 (실제 구현에서는 스토어나 인증 서비스에서 가져옴)
 const loginStore = useLoginStore();
-const userAvatar = ref("/path/to/default/avatar.jpg");
+console.log(loginStore.user?.profileImage);
 
 // 검색 옵션
 const searchCategories = [
@@ -35,7 +35,7 @@ const searchCategories = [
 const ratingOptions = [
   { title: "전체 연령", value: "safe" },
   { title: "준성인", value: "questionable" },
-  { title: "성인", value: "explicit" },
+  { title: "성인", value: "adult" },
 ];
 
 const sortOptions = [
@@ -317,7 +317,11 @@ const navigateToUpload = () => {
           <v-btn v-bind="props" icon class="ml-2">
             <v-avatar color="surface-variant" size="36">
               <v-icon v-if="!loginStore.isLogin">mdi-account</v-icon>
-              <v-img v-else :src="userAvatar" alt="사용자 아바타"></v-img>
+              <v-img
+                v-else
+                :src="loginStore.user?.profileImage"
+                alt="사용자 아바타"
+              ></v-img>
             </v-avatar>
           </v-btn>
         </template>

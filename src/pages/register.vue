@@ -18,5 +18,11 @@ const emptyFields = ref<Partial<UserInfoForm>>({
   displayName: "",
   name: "",
   phone: "",
+  profileImage: [],
+  country: "",
+  mainAddress: "",
+  subAddress: "",
+  sex: "",
+  age: 0,
 });
 </script>
