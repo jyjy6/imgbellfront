@@ -38,7 +38,8 @@
                 <v-text-field
                   v-model="imageInfo.uploaderName"
                   label="업로더 이름"
-                  :value="loginStore.user?.username || '익명'"
+                  :value="loginStore.user?.username || 'GUEST'"
+                  style="display: none"
                 ></v-text-field>
               </v-col>
 
@@ -63,36 +64,77 @@
                 <v-combobox
                   v-model="imageInfo.tags"
                   :items="suggestedTags"
-                  chips
+                  item-title="name"
+                  closable-chips
                   multiple
-                  label="태그"
-                  hint="이미지와 관련된 태그를 입력하세요"
+                  label="태그를 입력하고 ENTER!"
+                  hint="이미지와 관련된 태그를 입력하고 ENTER!"
+                  @update:modelValue="handleTagUpdate(imageInfo, $event)"
                 >
                   <template v-slot:selection="{ item }">
                     <v-chip
-                      close
-                      @click:close="removeTag(imageInfo, item.title)"
+                      class="ma-1"
+                      size="large"
+                      color="primary"
+                      variant="outlined"
+                      @click="removeTag(imageInfo, item.raw as TagType)"
                     >
-                      {{ item.title }}
+                      {{ (item.raw as TagType).name }}
                     </v-chip>
                   </template>
                 </v-combobox>
+              </v-col>
+              <v-col cols="12">
+                <div v-if="imageInfo.tags && imageInfo.tags.length > 0">
+                  <h4>태그 상세 정보</h4>
+                  <div
+                    v-for="(tag, tagIndex) in imageInfo.tags"
+                    :key="tagIndex"
+                    class="mb-4 pa-3"
+                    style="border: 1px solid #eee; border-radius: 4px"
+                  >
+                    <v-row dense>
+                      <v-col cols="12">
+                        <strong>태그: {{ tag.name }}</strong>
+                      </v-col>
+                      <v-col cols="12">
+                        <v-text-field
+                          v-model="tag.description"
+                          label="설명"
+                          density="compact"
+                          hide-details="auto"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12">
+                        <v-text-field
+                          v-model="tag.category"
+                          label="카테고리"
+                          density="compact"
+                          hide-details="auto"
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                  </div>
+                </div>
               </v-col>
 
               <!-- 기타 옵션 -->
               <v-col cols="12">
                 <v-row>
                   <v-col cols="12" md="4">
-                    <v-switch
-                      v-model="imageInfo.isAdult"
-                      label="성인물"
+                    <v-select
+                      v-model="imageInfo.imageGrade"
+                      label="등급 선택"
+                      :items="imageGrades"
+                      item-title="label"
+                      item-value="value"
                       color="warning"
-                    ></v-switch>
+                    ></v-select>
                   </v-col>
                   <v-col cols="12" md="4">
                     <v-switch
                       v-model="imageInfo.isPublic"
-                      label="공개 여부"
+                      label="이미지 공개 여부"
                       color="primary"
                     ></v-switch>
                   </v-col>
@@ -108,7 +150,7 @@
         <v-btn
           color="primary"
           block
-          @click="uploadImages"
+          @click="uploadImages(false)"
           :disabled="isUploading"
         >
           {{ isUploading ? "업로드 중..." : "이미지 업로드" }}
@@ -121,46 +163,72 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import axios from "axios";
 import { useLoginStore } from "../stores/loginStore";
 import { onMounted } from "vue";
 import { useImageS3Upload } from "../composables/useImageS3Upload";
-
-// 이미지 메타데이터 인터페이스
-interface ImageMetadata {
-  file: File;
-  previewUrl: string;
-  imageUrl?: string;
-  imageName: string;
-  uploaderName: string;
-  tags: string[];
-  source?: string;
-  artist?: string;
-  isAdult: boolean;
-  isPublic: boolean;
-}
+import type { ImageMetadata } from "../types/ImageTypes";
+import type { TagType } from "../types/TagTypes";
 
 // 로그인 스토어 초기화
 const loginStore = useLoginStore();
 
 // 상태 관리 반응형 변수들
-const { files, imageMetadataForms, isUploading, handleFileSelect } =
-  useImageS3Upload();
+const {
+  files,
+  imageMetadataForms,
+  isUploading,
+  uploadImages,
+  handleFileSelect,
+} = useImageS3Upload();
 // 태그 제거 함수
-const removeTag = (imageInfo: ImageMetadata, tag: string) => {
-  imageInfo.tags = imageInfo.tags.filter((t) => t !== tag);
+// 태그 제거 함수 (splice 사용 방식으로 수정)
+const removeTag = (imageInfo: ImageMetadata, tagToRemove: TagType) => {
+  console.log("Removing tag:", tagToRemove.name);
+
+  // tags 배열에서 제거할 태그의 인덱스를 찾습니다.
+  const index = imageInfo.tags.findIndex(
+    (tag) => tag.name === tagToRemove.name
+  );
+
+  // 인덱스를 찾았다면 (태그가 존재한다면)
+  if (index !== -1) {
+    // splice를 사용하여 해당 인덱스의 요소 1개를 제거합니다.
+    // 이 방식이 배열 변이를 직접 일으켜 Vue 반응성을 더 확실하게 트리거합니다.
+    imageInfo.tags.splice(index, 1);
+    console.log("Tag removed successfully, new tags array:", imageInfo.tags);
+  } else {
+    console.log("Tag not found in the array:", tagToRemove.name);
+  }
+};
+
+const handleTagUpdate = (
+  imageInfo: ImageMetadata,
+  updatedTags: (string | TagType)[]
+) => {
+  console.log(imageInfo);
+  // updatedTags 배열을 순회하며 string 형태의 태그를 TagType 객체로 변환
+  imageInfo.tags = updatedTags.map((tag) => {
+    if (typeof tag === "string") {
+      // 새로 입력된 문자열 태그는 기본 TagType 객체로 변환
+      return { name: tag, description: "", category: "" } as TagType;
+    }
+    // 이미 TagType 객체인 경우는 그대로 사용 (예: suggestedTags에서 선택된 경우)
+    // item-value="this" 설정으로 SuggestedTags의 TagType 객체가 그대로 넘어옴
+    return tag as TagType;
+  });
 };
 
 // 제안된 태그 목록
 const suggestedTags = ref([
-  { title: "풍경" },
-  { title: "초상화" },
-  { title: "추상" },
-  { title: "디지털아트" },
-  { title: "자연" },
-  { title: "도시" },
-  { title: "인물" },
-  { title: "동물" },
+  { name: "풍경" },
+  { name: "초상화" },
+  { name: "인물", description: "사람이 나오는 이미지" },
+  { name: "동물" },
+]);
+const imageGrades = ref([
+  { label: "일반", value: "GENERAL" },
+  { label: "성인", value: "ADULT" },
+  { label: "EXTREME", value: "EXTREME" },
 ]);
 
 onMounted(() => {
@@ -168,65 +236,6 @@ onMounted(() => {
 });
 
 // 이미지 업로드 함수
-const uploadImages = async () => {
-  isUploading.value = true;
-
-  try {
-    // 각 이미지 업로드 및 URL 획득
-    const uploadPromises = imageMetadataForms.value.map(async (imageInfo) => {
-      // FormData를 사용한 파일 업로드
-      const formData = new FormData();
-      formData.append("file", imageInfo.file);
-
-      // 임시 S3 URL 획득
-      const urlResponse = await axios.get("/api/image/presigned-url", {
-        params: { filename: imageInfo.file.name },
-      });
-
-      // S3 업로드
-      await axios.put(urlResponse.data.presignedUrl, imageInfo.file, {
-        headers: { "Content-Type": imageInfo.file.type },
-      });
-
-      // 이미지 URL 저장
-      imageInfo.imageUrl = urlResponse.data.imageUrl;
-    });
-
-    // 모든 파일 업로드 대기
-    await Promise.all(uploadPromises);
-
-    // 메타데이터와 함께 백엔드에 이미지 정보 전송
-    const imageUploadData = imageMetadataForms.value.map((info) => ({
-      imageUrl: info.imageUrl,
-      imageName: info.imageName,
-      uploaderName: info.uploaderName,
-      tags: info.tags,
-      source: info.source,
-      artist: info.artist,
-      isAdult: info.isAdult,
-      isPublic: info.isPublic,
-    }));
-
-    try {
-      const response = await axios.post("/api/image/upload", imageUploadData);
-      console.log(response.data);
-    } catch (error) {
-      console.error("에러남" + error);
-    }
-
-    // 성공 처리
-    alert("모든 이미지가 성공적으로 업로드되었습니다.");
-
-    // 폼 초기화
-    files.value = [];
-    imageMetadataForms.value = [];
-  } catch (error) {
-    console.error("이미지 업로드 중 오류 발생:", error);
-    alert("이미지 업로드 중 오류가 발생했습니다.");
-  } finally {
-    isUploading.value = false;
-  }
-};
 </script>
 
 <style scoped>

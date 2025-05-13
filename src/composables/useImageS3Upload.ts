@@ -23,14 +23,16 @@ export function useImageS3Upload() {
       imageMetadataForms.value.push({
         file,
         previewUrl,
+        imageUrl: "",
         imageName: file.name, // 기본값으로 파일 이름 사용
         uploaderName: loginStore.user?.username || "GUEST",
         tags: [],
-        isAdult: false,
+        imageGrade: "GENERAL",
         isPublic: true,
+        fileSize: file.size, // 파일 크기 (bytes 단위)
+        fileType: file.type, // 파일 MIME 타입
       });
     });
-    console.log(imageMetadataForms.value);
   };
 
   const uploadImages = async (isRegister?: boolean): Promise<string | void> => {
@@ -82,16 +84,23 @@ export function useImageS3Upload() {
       const imageUploadData = imageMetadataForms.value.map((info) => ({
         imageUrl: info.imageUrl,
         imageName: info.imageName,
-        uploaderName: info.uploaderName,
         tags: info.tags,
         source: info.source,
         artist: info.artist,
-        isAdult: info.isAdult,
+        imageGrade: info.imageGrade,
         isPublic: info.isPublic,
+        uploaderName: info.uploaderName,
+        fileSize: info.fileSize,
+        fileType: info.fileType,
       }));
 
+      console.log("이미지 데이터들:");
+      console.log(imageUploadData);
       try {
-        const response = await axios.post("/api/image/upload", imageUploadData);
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/image/upload`,
+          imageUploadData
+        );
         console.log(response.data);
       } catch (error) {
         console.error("에러남" + error);

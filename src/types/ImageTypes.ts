@@ -1,12 +1,16 @@
+import type { TagType } from "./TagTypes";
+
 export interface ImageMetadata {
   file: File;
   previewUrl: string;
-  imageUrl?: string;
+  imageUrl: string;
   imageName: string;
-  uploaderName: string;
-  tags: string[];
+  tags: TagType[];
   source?: string;
   artist?: string;
-  isAdult: boolean;
+  imageGrade: string;
   isPublic: boolean;
+  uploaderName: string;
+  fileSize?: number;
+  fileType?: string;
 }

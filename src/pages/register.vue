@@ -18,7 +18,7 @@ const emptyFields = ref<Partial<UserInfoForm>>({
   displayName: "",
   name: "",
   phone: "",
-  profileImage: [],
+  profileImage: "",
   country: "",
   mainAddress: "",
   subAddress: "",
