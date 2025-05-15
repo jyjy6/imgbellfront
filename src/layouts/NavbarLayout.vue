@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useLoginStore } from "../stores/loginStore";
+import { useImageStore } from "../stores/imageStore";
+import type { TagType } from "../types/TagTypes";
 
 const router = useRouter();
+const loginStore = useLoginStore();
+const imageStore = useImageStore();
 
 // 상태 변수
 const drawer = ref(false);
 const searchQuery = ref("");
 const showSearchOptions = ref(false);
-const searchCategory = ref("all");
-const searchRating = ref(["safe"]);
-const searchSort = ref("date_desc");
+const searchCategory = ref("");
+const searchGrade = ref([""]); // imageStore의 등급 체계에 맞게 변경
 const showSearchModal = ref(false);
 
 const recentSearches = ref<{ query: string; options?: any }[]>(
   JSON.parse(localStorage.getItem("recentSearches") || "[]")
 );
 
-const popularTags = ref([]);
-
-// 사용자 상태 (실제 구현에서는 스토어나 인증 서비스에서 가져옴)
-const loginStore = useLoginStore();
-console.log(loginStore.user?.profileImage);
+const popularTags = ref<TagType[]>();
 
 // 검색 옵션
 const searchCategories = [
@@ -32,41 +31,57 @@ const searchCategories = [
   { title: "업로더", value: "uploader" },
 ];
 
-const ratingOptions = [
-  { title: "전체 연령", value: "safe" },
-  { title: "준성인", value: "questionable" },
-  { title: "성인", value: "adult" },
-];
+// imageStore의 gradeOptions 활용
+const getGradeOptions = () => {
+  return imageStore.gradeOptions.map((option) => ({
+    title: option.title,
+    value: option.value,
+  }));
+};
 
-const sortOptions = [
-  { title: "최신순", value: "date_desc" },
-  { title: "오래된순", value: "date_asc" },
-  { title: "인기순", value: "popularity" },
-  { title: "평점순", value: "rating" },
-];
+// imageStore의 sortOptions 활용
+const getSortOptions = () => {
+  return imageStore.sortOptions.map((option) => ({
+    title: option.title,
+    value: option.value,
+  }));
+};
 
 // 메소드
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
     // 검색 이력에 추가
     saveSearchToHistory();
-
-    router.push({
-      path: "/search",
-      query: {
-        q: searchQuery.value,
-        category: searchCategory.value,
-        rating: searchRating.value.join(","),
-        sort: searchSort.value,
-      },
-    });
-
-    // 검색 모달 닫기
-    showSearchModal.value = false;
-    // 모바일에서 검색 후 드로어 닫기
-    drawer.value = false;
   }
+
+  // 검색 카테고리가 태그면 imageStore의 searchByTag 활용
+  if (searchCategory.value === "tags") {
+    imageStore.searchTag = searchQuery.value;
+  }
+  // 등급 필터 적용
+  if (searchGrade.value.length > 0 && searchGrade.value[0] !== "") {
+    imageStore.selectedGrade = searchGrade.value[0];
+  } else {
+    imageStore.selectedGrade = "";
+  }
+
+  // 정렬 옵션 적용
+  imageStore.sortOption = searchSort.value;
+
+  // 페이지를 1로 초기화하고 이미지 로드
+  imageStore.page = 1;
+
+  // 이미지 로드
+  imageStore.loadImages();
+
+  // 검색 모달 닫기
+  showSearchModal.value = false;
+  // 모바일에서 검색 후 드로어 닫기
+  drawer.value = false;
 };
+
+// 정렬 옵션 (imageStore의 옵션에 맞게 변경)
+const searchSort = ref("newest");
 
 const saveSearchToHistory = () => {
   // 이미 같은 검색어가 있는지 확인
@@ -84,7 +99,7 @@ const saveSearchToHistory = () => {
     query: searchQuery.value.trim(),
     options: {
       category: searchCategory.value,
-      rating: [...searchRating.value],
+      grade: [...searchGrade.value],
       sort: searchSort.value,
     },
   });
@@ -104,8 +119,8 @@ const applyRecentSearch = (search: { query: string; options?: any }) => {
   // 검색 옵션이 있으면 적용
   if (search.options) {
     searchCategory.value = search.options.category || "all";
-    searchRating.value = search.options.rating || ["safe"];
-    searchSort.value = search.options.sort || "date_desc";
+    searchGrade.value = search.options.grade || [""];
+    searchSort.value = search.options.sort || "newest";
   }
 
   // 즉시 검색 실행
@@ -122,25 +137,68 @@ const clearRecentSearches = () => {
   localStorage.removeItem("recentSearches");
 };
 
-const searchByTag = (tag: string) => {
-  searchQuery.value = tag;
+const searchByTag = (tag: TagType) => {
+  searchQuery.value = tag.name;
   searchCategory.value = "tags";
-  handleSearch();
+  // imageStore의 searchByTag 메서드 활용
+  imageStore.searchByTag(tag.name);
+  // 검색 이력에 추가
+  saveSearchToHistory();
+  // 모달 닫기
+  showSearchModal.value = false;
 };
 
 const applySearchOptions = () => {
   showSearchOptions.value = false;
-  // 검색 결과에 적용하는 로직 (필요시)
+  // 검색 결과에 바로 적용
+  if (searchQuery.value.trim()) {
+    handleSearch();
+  }
 };
 
 const navigateToUpload = () => {
   if (loginStore.isLogin) {
-    router.push("/upload");
+    router.push("/image/upload");
   } else {
     // 비로그인 상태면 로그인 페이지로 리다이렉트하거나 모달 표시
     router.push("/login?redirect=upload");
   }
 };
+
+// 인기 태그 로드 (실제 구현 예시)
+const loadPopularTags = async () => {
+  try {
+    // 실제로는 API 호출을 통해 인기 태그를 로드
+    // const response = await axios.get('/api/tags/popular');
+    // popularTags.value = response.data;
+
+    // 임시 데이터
+    popularTags.value = [
+      {
+        name: "자연",
+        description: "자연 풍경과 관련된 이미지",
+        category: "풍경",
+      },
+      {
+        name: "동물",
+        description: "동물과 관련된 이미지",
+        category: "생물",
+      },
+      {
+        name: "풍경",
+        description: "풍경 사진",
+        category: "풍경",
+      },
+    ];
+  } catch (error) {
+    console.error("인기 태그 로드 실패:", error);
+  }
+};
+
+// 컴포넌트 마운트 시 인기 태그 로드
+onMounted(() => {
+  loadPopularTags();
+});
 </script>
 
 <template>
@@ -149,7 +207,10 @@ const navigateToUpload = () => {
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
 
       <v-app-bar-title class="font-weight-bold">
-        <router-link to="/" class="text-decoration-none text-white"
+        <router-link
+          to="/"
+          @click="imageStore.resetAll()"
+          class="text-decoration-none text-white"
           >ImageBell</router-link
         >
       </v-app-bar-title>
@@ -178,8 +239,8 @@ const navigateToUpload = () => {
               </v-col>
               <v-col cols="12">
                 <v-select
-                  v-model="searchRating"
-                  :items="ratingOptions"
+                  v-model="searchGrade"
+                  :items="getGradeOptions()"
                   label="등급"
                   variant="outlined"
                   density="compact"
@@ -190,7 +251,7 @@ const navigateToUpload = () => {
               <v-col cols="12">
                 <v-select
                   v-model="searchSort"
-                  :items="sortOptions"
+                  :items="getSortOptions()"
                   label="정렬"
                   variant="outlined"
                   density="compact"
@@ -279,7 +340,7 @@ const navigateToUpload = () => {
                   color="primary"
                   @click="searchByTag(tag)"
                 >
-                  {{ tag }}
+                  {{ tag.name }}
                 </v-chip>
               </v-chip-group>
             </div>
@@ -292,7 +353,6 @@ const navigateToUpload = () => {
               variant="elevated"
               block
               @click="handleSearch"
-              :disabled="!searchQuery.trim()"
             >
               검색
             </v-btn>
@@ -409,51 +469,6 @@ const navigateToUpload = () => {
         ></v-list-item>
       </v-list>
     </v-navigation-drawer>
-
-    <!-- Search Options Dialog -->
-    <v-dialog v-model="showSearchOptions" max-width="500">
-      <v-card>
-        <v-card-title>검색 옵션</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-select
-                v-model="searchCategory"
-                :items="searchCategories"
-                label="카테고리"
-                variant="outlined"
-                density="compact"
-              ></v-select>
-            </v-col>
-            <v-col cols="12">
-              <v-select
-                v-model="searchRating"
-                :items="ratingOptions"
-                label="등급"
-                variant="outlined"
-                density="compact"
-                multiple
-                chips
-              ></v-select>
-            </v-col>
-            <v-col cols="12">
-              <v-select
-                v-model="searchSort"
-                :items="sortOptions"
-                label="정렬"
-                variant="outlined"
-                density="compact"
-              ></v-select>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" @click="applySearchOptions">적용</v-btn>
-          <v-btn color="grey" @click="showSearchOptions = false">취소</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <!-- Main Content Area -->
     <v-main>
