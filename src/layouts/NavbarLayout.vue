@@ -11,9 +11,8 @@ const imageStore = useImageStore();
 
 // 상태 변수
 const drawer = ref(false);
-const searchQuery = ref("");
 const showSearchOptions = ref(false);
-const searchCategory = ref("");
+
 const searchGrade = ref([""]); // imageStore의 등급 체계에 맞게 변경
 const showSearchModal = ref(false);
 
@@ -26,9 +25,9 @@ const popularTags = ref<TagType[]>();
 // 검색 옵션
 const searchCategories = [
   { title: "전체", value: "all" },
-  { title: "태그", value: "tags" },
-  { title: "제목", value: "title" },
-  { title: "업로더", value: "uploader" },
+  { title: "태그", value: "tag" },
+  { title: "제목", value: "imageName" },
+  { title: "업로더", value: "uploaderName" },
 ];
 
 // imageStore의 gradeOptions 활용
@@ -47,17 +46,36 @@ const getSortOptions = () => {
   }));
 };
 
+const getSearchPlaceholder = () => {
+  switch (imageStore.searchCategory) {
+    case "all":
+      return "전체(태그, 제목, 업로더) 검색";
+    case "tag":
+      return "태그로 검색";
+    case "imageName":
+      return "제목으로 검색";
+    case "uploaderName":
+      return "업로더로 검색";
+    default:
+      return "검색어를 입력하세요";
+  }
+};
+
 // 메소드
 const handleSearch = () => {
-  if (searchQuery.value.trim()) {
+  if (imageStore.searchQuery.trim()) {
     // 검색 이력에 추가
     saveSearchToHistory();
   }
 
   // 검색 카테고리가 태그면 imageStore의 searchByTag 활용
-  if (searchCategory.value === "tags") {
-    imageStore.searchTag = searchQuery.value;
+  if (imageStore.searchCategory === "tag") {
+    imageStore.searchTag = imageStore.searchQuery;
+  } else {
+    // tag가 아닌 경우, searchTag는 비우고 검색 로직은 loadImages에서 처리
+    imageStore.searchTag = "";
   }
+
   // 등급 필터 적용
   if (searchGrade.value.length > 0 && searchGrade.value[0] !== "") {
     imageStore.selectedGrade = searchGrade.value[0];
@@ -86,7 +104,7 @@ const searchSort = ref("newest");
 const saveSearchToHistory = () => {
   // 이미 같은 검색어가 있는지 확인
   const index = recentSearches.value.findIndex(
-    (item) => item.query === searchQuery.value.trim()
+    (item) => item.query === imageStore.searchQuery.trim()
   );
 
   // 있으면 제거
@@ -96,9 +114,9 @@ const saveSearchToHistory = () => {
 
   // 새 검색어를 앞에 추가
   recentSearches.value.unshift({
-    query: searchQuery.value.trim(),
+    query: imageStore.searchQuery.trim(),
     options: {
-      category: searchCategory.value,
+      category: imageStore.searchCategory,
       grade: [...searchGrade.value],
       sort: searchSort.value,
     },
@@ -114,11 +132,11 @@ const saveSearchToHistory = () => {
 };
 
 const applyRecentSearch = (search: { query: string; options?: any }) => {
-  searchQuery.value = search.query;
+  imageStore.searchQuery = search.query;
 
   // 검색 옵션이 있으면 적용
   if (search.options) {
-    searchCategory.value = search.options.category || "all";
+    imageStore.searchCategory = search.options.category || "all";
     searchGrade.value = search.options.grade || [""];
     searchSort.value = search.options.sort || "newest";
   }
@@ -138,8 +156,8 @@ const clearRecentSearches = () => {
 };
 
 const searchByTag = (tag: TagType) => {
-  searchQuery.value = tag.name;
-  searchCategory.value = "tags";
+  imageStore.searchQuery = tag.name;
+  imageStore.searchCategory = "tag";
   // imageStore의 searchByTag 메서드 활용
   imageStore.searchByTag(tag.name);
   // 검색 이력에 추가
@@ -151,7 +169,7 @@ const searchByTag = (tag: TagType) => {
 const applySearchOptions = () => {
   showSearchOptions.value = false;
   // 검색 결과에 바로 적용
-  if (searchQuery.value.trim()) {
+  if (imageStore.searchQuery.trim()) {
     handleSearch();
   }
 };
@@ -230,7 +248,7 @@ onMounted(() => {
             <v-row>
               <v-col cols="12">
                 <v-select
-                  v-model="searchCategory"
+                  v-model="imageStore.searchCategory"
                   :items="searchCategories"
                   label="카테고리"
                   variant="outlined"
@@ -288,8 +306,8 @@ onMounted(() => {
           <v-card-text>
             <v-form @submit.prevent="handleSearch">
               <v-text-field
-                v-model="searchQuery"
-                label="태그, 제목, 업로더 등으로 검색"
+                v-model="imageStore.searchQuery"
+                :label="getSearchPlaceholder()"
                 variant="outlined"
                 density="compact"
                 autofocus
@@ -388,8 +406,8 @@ onMounted(() => {
 
         <v-list>
           <template v-if="loginStore.isLogin">
-            <v-list-item to="/profile">
-              <v-list-item-title>프로필</v-list-item-title>
+            <v-list-item to="/mypage">
+              <v-list-item-title>마이페이지</v-list-item-title>
             </v-list-item>
             <v-list-item to="/favorites">
               <v-list-item-title>즐겨찾기</v-list-item-title>

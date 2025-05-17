@@ -17,13 +17,14 @@ export const useImageStore = defineStore("image", () => {
   const images = ref<ImageDto[]>([]);
   const loading = ref(true);
   const page = ref(1);
-  const size = ref(20);
+  const size = ref(6);
   const totalPages = ref(0);
   const searchTag = ref("");
   const selectedGrade = ref("");
   const sortOption = ref("newest");
   const selectedImage = ref<ImageDetailDto | null>(null);
-
+  const searchCategory = ref("all");
+  const searchQuery = ref("");
   const dialog = ref(false);
   const userLikeList = ref<ImageDto[] | null>([]);
 
@@ -47,6 +48,8 @@ export const useImageStore = defineStore("image", () => {
   const resetAll = () => {
     searchTag.value = "";
     sortOption.value = "newest";
+    searchCategory.value = "all";
+    searchQuery.value = "";
     loadImages();
   };
   // 등급별 색상 매핑
@@ -73,8 +76,46 @@ export const useImageStore = defineStore("image", () => {
   };
 
   // 이미지 목록 로드
+  // const loadImages = async () => {
+  //   loading.value = true;
+  //   try {
+  //     let endpoint = "/api/image/list";
+  //     let params: any = {
+  //       page: page.value - 1, // Spring은 0부터 페이지 시작
+  //       size: size.value,
+  //     };
+
+  //     // 정렬 옵션 처리
+  //     if (sortOption.value === "popular") {
+  //       endpoint = "/api/image/popular";
+  //     } else if (sortOption.value === "newest") {
+  //       params.sort = "id,desc";
+  //     } else if (sortOption.value === "mostLiked") {
+  //       params.sort = "likeCount,desc";
+  //     }
+
+  //     // 필터링 옵션 처리
+  //     if (searchTag.value) {
+  //       params.tag = searchTag.value;
+  //     }
+
+  //     if (selectedGrade.value) {
+  //       params.grade = selectedGrade.value;
+  //     }
+
+  //     const response = await axios.get<PageResponse>(endpoint, { params });
+  //     images.value = response.data.content;
+  //     totalPages.value = response.data.totalPages;
+  //   } catch (error) {
+  //     console.error("이미지 로드 실패:", error);
+  //   } finally {
+  //     loading.value = false;
+  //   }
+  // };
   const loadImages = async () => {
     loading.value = true;
+    console.log("현재서치쿼리:" + searchQuery.value);
+    console.log("현재서치카테고리:" + searchCategory.value);
     try {
       let endpoint = "/api/image/list";
       let params: any = {
@@ -91,11 +132,22 @@ export const useImageStore = defineStore("image", () => {
         params.sort = "likeCount,desc";
       }
 
-      // 필터링 옵션 처리
-      if (searchTag.value) {
+      // 검색 카테고리 및 검색어 처리
+      if (searchCategory.value === "all" && searchQuery.value) {
+        params.keyword = searchQuery.value;
+        params.searchType = "all";
+      } else if (searchCategory.value === "tag" && searchTag.value) {
         params.tag = searchTag.value;
+        params.searchType = "tag";
+      } else if (searchCategory.value === "imageName" && searchQuery.value) {
+        params.imageName = searchQuery.value;
+        params.searchType = "imageName";
+      } else if (searchCategory.value === "uploaderName" && searchQuery.value) {
+        params.uploaderName = searchQuery.value;
+        params.searchType = "uploaderName";
       }
 
+      // 등급 필터링
       if (selectedGrade.value) {
         params.grade = selectedGrade.value;
       }
@@ -215,6 +267,8 @@ export const useImageStore = defineStore("image", () => {
     selectedImage,
     isLiked,
     dialog,
+    searchCategory,
+    searchQuery,
 
     // 옵션
     gradeOptions,

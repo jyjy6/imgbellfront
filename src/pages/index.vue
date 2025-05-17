@@ -13,7 +13,7 @@
                   v-model="imageStore.searchTag"
                   label="태그 검색"
                   prepend-inner-icon="mdi-tag"
-                  @keyup.enter="imageStore.loadImages"
+                  @keyup.enter="imageStore.searchByTag(imageStore.searchTag)"
                   clearable
                 ></v-text-field>
               </v-col>

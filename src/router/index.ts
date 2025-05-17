@@ -26,6 +26,12 @@ const routes: Array<RouteRecordRaw> = [
     component: () =>
       import(/* webpackChunkName: "imageupload" */ "../pages/image/upload.vue"),
   },
+  {
+    path: "/mypage",
+    name: "MyPage",
+    component: () =>
+      import(/* webpackChunkName: "mypage" */ "../pages/mypage/index.vue"),
+  },
 ];
 
 const router = createRouter({

@@ -12,7 +12,6 @@ const loginCheck = localStorage.getItem("user");
 // 액세스토큰 갱신 함수
 const refreshAccessToken = async () => {
   console.log("refreshAccessToken: Function invoked");
-
   try {
     // 서버에 요청하여 새로운 액세스 토큰 발급
     const response = await axios.get(`${baseURL}/api/refresh-token`, {
@@ -80,17 +79,19 @@ if (loginCheck) {
     },
     async (error) => {
       const originalRequest = error.config;
+      console.log("originalRequest 발동");
 
       // 로그인 요청은 무시
       if (originalRequest.url.includes("/api/login/jwt")) {
         return Promise.reject(error);
       }
-
+      console.log("originalRequest 발동2");
       // 토큰 갱신 요청에서 401 에러가 발생했다면 바로 로그아웃
       if (
         originalRequest.url.includes("/api/refresh-token") &&
         error.response?.status === 401
       ) {
+        console.log("originalRequest 발동3");
         if (!isRefreshing) {
           isRefreshing = true;
           const loginStore = useLoginStore();
@@ -100,6 +101,7 @@ if (loginCheck) {
           return Promise.reject(error);
         }
       }
+      console.log("originalRequest 발동3.5");
 
       // 401 Unauthorized 응답 처리 (토큰 만료 시)
       if (error.response?.status === 401 && !originalRequest._retry) {
@@ -111,7 +113,7 @@ if (loginCheck) {
 
           try {
             const newAccessToken = await refreshAccessToken();
-
+            console.log("액세스토큰 갱신 신청");
             // 갱신 성공 - 대기 중인 요청들 처리
             originalRequest.headers[
               "Authorization"
