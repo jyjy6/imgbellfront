@@ -172,7 +172,7 @@ import { useImageS3Upload } from "../composables/useImageS3Upload";
 const props = defineProps<{
   //수정시에 들어오는 기존 폼의 데이타
   apiURL: string;
-  formData?: UserInfoForm;
+  formData?: Partial<UserInfoForm>;
   isPut?: boolean;
 }>();
 
@@ -207,6 +207,7 @@ watch(
 );
 
 onMounted(() => {
+  console.log("이즈풋");
   console.log(props.isPut);
   console.log(props.formData);
   if (props.isPut) {
@@ -341,17 +342,18 @@ const submitForm = async () => {
     alert("닉네임 중복 확인이 필요합니다.");
     return;
   }
-  const profileImageURL = await uploadImages(true);
-  form.value.profileImage = profileImageURL as string;
+
+  //프로필이미지를 업로드했을시에만 발동
+  if (imageMetadataForms.value.length > 0) {
+    const profileImageURL = await uploadImages(true);
+    form.value.profileImage = profileImageURL as string;
+  }
 
   if (props.isPut) {
     form.value.username = props.formData?.username as string;
     try {
       console.log("풋요청발동");
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/members/modify`,
-        form.value
-      );
+      const response = await axios.put(props.apiURL, form.value);
       localStorage.setItem("user", JSON.stringify(response.data));
 
       loginStore.loadUserFromLocalStorage();

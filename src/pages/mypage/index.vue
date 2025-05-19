@@ -2,25 +2,12 @@
 import { ref, computed } from "vue";
 import { useLoginStore } from "../../stores/loginStore";
 import type { UserInfo } from "../../types/UserInfoTypes";
-import { onMounted } from "vue";
-import axios from "axios";
+import RegisterFormComponent from "../../components/RegisterFormComponent.vue";
 
 const loginStore = useLoginStore();
 
-const tabs = ref(["프로필", "계정 설정", "구독 정보"]);
+const tabs = ref(["프로필", "내 업로드 이미지", "구독 정보"]);
 const currentTab = ref("프로필");
-const user = ref<UserInfo>();
-onMounted(async () => {
-  try {
-    const response = await axios.get("/api/members/userinfo");
-
-    user.value = response.data;
-    console.log("받아온유저정보:");
-    console.log(user.value);
-  } catch (error) {
-    console.log(error);
-  }
-});
 
 const formattedDate = (dateString: string) => {
   if (!dateString) return "정보 없음";
@@ -73,14 +60,6 @@ const startEdit = () => {
 
 const cancelEdit = () => {
   editMode.value = false;
-};
-
-const saveChanges = () => {
-  // 여기서 API 호출하여 사용자 정보 업데이트
-  // loginStore.updateUser(userForm.value);
-  console.log("사용자 정보 업데이트:", userForm.value);
-  editMode.value = false;
-  // 성공 메시지 표시
 };
 
 console.log("유저:");
@@ -239,155 +218,46 @@ console.log(loginStore.getUser);
                     </v-card>
 
                     <!-- 프로필 수정폼 -->
-                    <v-form v-if="editMode" class="mt-3">
-                      <v-row>
-                        <v-col cols="12" md="6">
-                          <v-text-field
-                            v-model="userForm!.name"
-                            label="이름"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-text-field>
-                        </v-col>
-
-                        <v-col cols="12" md="6">
-                          <v-text-field
-                            v-model="userForm!.displayName"
-                            label="표시 이름"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-text-field>
-                        </v-col>
-
-                        <v-col cols="12" md="6">
-                          <v-text-field
-                            v-model="userForm!.phone"
-                            label="전화번호"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-text-field>
-                        </v-col>
-
-                        <v-col cols="12" md="6">
-                          <v-select
-                            v-model="userForm!.sex"
-                            label="성별"
-                            :items="['남성', '여성', '기타']"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-select>
-                        </v-col>
-
-                        <v-col cols="12" md="6">
-                          <v-text-field
-                            v-model="userForm!.age"
-                            label="나이"
-                            type="number"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-text-field>
-                        </v-col>
-
-                        <v-col cols="12" md="6">
-                          <v-text-field
-                            v-model="userForm!.country"
-                            label="국가"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-text-field>
-                        </v-col>
-
-                        <v-col cols="12">
-                          <v-text-field
-                            v-model="userForm!.mainAddress"
-                            label="주소"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-text-field>
-                        </v-col>
-
-                        <v-col cols="12">
-                          <v-text-field
-                            v-model="userForm!.subAddress"
-                            label="상세 주소"
-                            variant="outlined"
-                            density="comfortable"
-                          ></v-text-field>
-                        </v-col>
-
-                        <v-col cols="12" class="d-flex justify-end">
-                          <v-btn
-                            color="error"
-                            variant="text"
-                            class="mr-2"
-                            @click="cancelEdit"
-                          >
-                            취소
-                          </v-btn>
-                          <v-btn color="primary" @click="saveChanges">
-                            저장
-                          </v-btn>
-                        </v-col>
-                      </v-row>
-                    </v-form>
+                    <v-row v-show="editMode">
+                      <RegisterFormComponent
+                        :fields="{
+                          ...loginStore.user,
+                          password: '', // 필수 필드 추가
+                        }"
+                        :formData="{
+                          username : loginStore.user!.username,
+                          displayName: loginStore.user!.displayName,
+                          name: loginStore.user!.name,
+                          email: loginStore.user!.email,
+                          phone: loginStore.user!.phone,
+                          profileImage: loginStore.user!.profileImage,
+                          country: loginStore.user!.country,
+                          mainAddress: loginStore.user!.mainAddress,
+                          subAddress: loginStore.user!.subAddress,
+                          sex: loginStore.user!.sex,
+                          age: loginStore.user!.age,
+                          password: '',
+                        }"
+                        :isPut="true"
+                        apiURL="/api/members/modify"
+                      />
+                      <v-btn
+                        color="error"
+                        variant="text"
+                        class="mr-2"
+                        @click="cancelEdit"
+                      >
+                        취소
+                      </v-btn>
+                    </v-row>
                   </v-col>
                 </v-row>
               </v-card-text>
             </v-window-item>
 
             <!-- 계정 설정 탭 -->
-            <v-window-item value="계정 설정">
-              <v-card-text>
-                <v-list>
-                  <v-list-subheader class="text-h6">계정 보안</v-list-subheader>
-
-                  <v-list-item>
-                    <template v-slot:prepend>
-                      <v-icon icon="mdi-lock-outline" class="mr-2"></v-icon>
-                    </template>
-                    <v-list-item-title>비밀번호 변경</v-list-item-title>
-                    <template v-slot:append>
-                      <v-btn color="primary" variant="text">변경</v-btn>
-                    </template>
-                  </v-list-item>
-
-                  <v-list-item>
-                    <template v-slot:prepend>
-                      <v-icon icon="mdi-email-outline" class="mr-2"></v-icon>
-                    </template>
-                    <v-list-item-title>이메일 변경</v-list-item-title>
-                    <v-list-item-subtitle>{{
-                      loginStore.getUser?.email
-                    }}</v-list-item-subtitle>
-                    <template v-slot:append>
-                      <v-btn color="primary" variant="text">변경</v-btn>
-                    </template>
-                  </v-list-item>
-
-                  <v-divider class="my-4"></v-divider>
-
-                  <v-list-subheader class="text-h6">계정 관리</v-list-subheader>
-
-                  <v-list-item>
-                    <template v-slot:prepend>
-                      <v-icon
-                        icon="mdi-account-remove-outline"
-                        color="error"
-                        class="mr-2"
-                      ></v-icon>
-                    </template>
-                    <v-list-item-title class="text-error"
-                      >계정 삭제</v-list-item-title
-                    >
-                    <v-list-item-subtitle
-                      >계정을 영구적으로 삭제합니다</v-list-item-subtitle
-                    >
-                    <template v-slot:append>
-                      <v-btn color="error" variant="text">삭제</v-btn>
-                    </template>
-                  </v-list-item>
-                </v-list>
-              </v-card-text>
+            <v-window-item value="내 업로드 이미지">
+              <ImageListComponent />
             </v-window-item>
 
             <!-- 구독 정보 탭 -->

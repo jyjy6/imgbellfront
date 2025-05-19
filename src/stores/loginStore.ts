@@ -3,7 +3,6 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import type { UserInfo } from "../types/UserInfoTypes";
-import { jwtDecode } from "jwt-decode";
 
 export const useLoginStore = defineStore("login", () => {
   const isLogin = ref(false);
@@ -37,30 +36,22 @@ export const useLoginStore = defineStore("login", () => {
         `${import.meta.env.VITE_API_BASE_URL}/api/login/jwt`,
         { username, password }
       );
+      const accessToken = response.data.accessToken;
 
-      if (response.data) {
-        const accessToken = response.data.accessToken;
+      localStorage.setItem("accessToken", accessToken);
 
-        // ✅ JWT 디코딩해서 유저 정보 추출
-        const decodedToken: any = jwtDecode(accessToken);
-        console.log("Decoded Token:", decodedToken);
-        if (decodedToken.userInfo) {
-          user.value = JSON.parse(decodedToken.userInfo); // 🔥 userInfo가 JSON으로 들어있음
-        }
-        console.log(isLogin.value);
+      // ✅ 별도 API로 유저 정보 가져오기 login
+      const userResponse = await axios.get("/api/members/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      user.value = userResponse.data;
 
-        isLogin.value = true;
-        console.log(isLogin.value);
+      localStorage.setItem("user", JSON.stringify(user.value));
+      isLogin.value = true;
 
-        // ✅ 로컬 스토리지에 저장 (새로고침 시 유지)
-        localStorage.setItem("user", JSON.stringify(user.value));
-        localStorage.setItem("accessToken", accessToken);
+      alert("로그인 성공!");
+      router.go(-1);
 
-        alert("로그인 성공!");
-        router.go(-1);
-      } else {
-        alert(response.data.message || "로그인 실패!");
-      }
       return;
     } catch (error: any) {
       if (
