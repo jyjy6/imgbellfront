@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import axios from "axios";
 import type { ImageDetailDto, ImageDto } from "../types/ImageTypes";
 import { useLoginStore } from "./loginStore";
@@ -27,6 +27,7 @@ export const useImageStore = defineStore("image", () => {
   const searchQuery = ref("");
   const dialog = ref(false);
   const userLikeList = ref<ImageDto[] | null>([]);
+  const myImageList = ref(false);
 
   const loginStore = useLoginStore();
 
@@ -75,43 +76,6 @@ export const useImageStore = defineStore("image", () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // 이미지 목록 로드
-  // const loadImages = async () => {
-  //   loading.value = true;
-  //   try {
-  //     let endpoint = "/api/image/list";
-  //     let params: any = {
-  //       page: page.value - 1, // Spring은 0부터 페이지 시작
-  //       size: size.value,
-  //     };
-
-  //     // 정렬 옵션 처리
-  //     if (sortOption.value === "popular") {
-  //       endpoint = "/api/image/popular";
-  //     } else if (sortOption.value === "newest") {
-  //       params.sort = "id,desc";
-  //     } else if (sortOption.value === "mostLiked") {
-  //       params.sort = "likeCount,desc";
-  //     }
-
-  //     // 필터링 옵션 처리
-  //     if (searchTag.value) {
-  //       params.tag = searchTag.value;
-  //     }
-
-  //     if (selectedGrade.value) {
-  //       params.grade = selectedGrade.value;
-  //     }
-
-  //     const response = await axios.get<PageResponse>(endpoint, { params });
-  //     images.value = response.data.content;
-  //     totalPages.value = response.data.totalPages;
-  //   } catch (error) {
-  //     console.error("이미지 로드 실패:", error);
-  //   } finally {
-  //     loading.value = false;
-  //   }
-  // };
   const loadImages = async () => {
     loading.value = true;
     console.log("현재서치쿼리:" + searchQuery.value);
@@ -146,6 +110,14 @@ export const useImageStore = defineStore("image", () => {
         params.uploaderName = searchQuery.value;
         params.searchType = "uploaderName";
       }
+      if (myImageList.value) {
+        params.myImageList = true;
+        params.searchType = "all";
+      } else {
+        params.myImageList = false;
+      }
+
+      console.log(params);
 
       // 등급 필터링
       if (selectedGrade.value) {
@@ -269,6 +241,7 @@ export const useImageStore = defineStore("image", () => {
     dialog,
     searchCategory,
     searchQuery,
+    myImageList,
 
     // 옵션
     gradeOptions,

@@ -3,6 +3,11 @@ import { ref, computed } from "vue";
 import { useLoginStore } from "../../stores/loginStore";
 import type { UserInfo } from "../../types/UserInfoTypes";
 import RegisterFormComponent from "../../components/RegisterFormComponent.vue";
+import { onMounted } from "vue";
+import { useImageStore } from "../../stores/imageStore";
+import ImageListComponent from "../../components/ImageListComponent.vue";
+import ImageSearchComponent from "../../components/ImageSearchComponent.vue";
+import { onUnmounted } from "vue";
 
 const loginStore = useLoginStore();
 
@@ -62,8 +67,16 @@ const cancelEdit = () => {
   editMode.value = false;
 };
 
-console.log("유저:");
-console.log(loginStore.getUser);
+const imageStore = useImageStore();
+onMounted(() => {
+  imageStore.myImageList = true;
+  imageStore.loadImages();
+});
+onUnmounted(() => {
+  imageStore.myImageList = false;
+  console.log("마이페이지리스트밸류");
+  console.log(imageStore.myImageList);
+});
 </script>
 
 <template>
@@ -257,6 +270,7 @@ console.log(loginStore.getUser);
 
             <!-- 계정 설정 탭 -->
             <v-window-item value="내 업로드 이미지">
+              <ImageSearchComponent />
               <ImageListComponent />
             </v-window-item>
 
