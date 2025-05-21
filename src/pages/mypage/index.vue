@@ -11,7 +11,12 @@ import { onUnmounted } from "vue";
 
 const loginStore = useLoginStore();
 
-const tabs = ref(["프로필", "내 업로드 이미지", "구독 정보"]);
+const tabs = ref([
+  "프로필",
+  "내 업로드 이미지",
+  "내 좋아요 이미지",
+  "구독 정보",
+]);
 const currentTab = ref("프로필");
 
 const formattedDate = (dateString: string) => {
@@ -77,6 +82,14 @@ onUnmounted(() => {
   console.log("마이페이지리스트밸류");
   console.log(imageStore.myImageList);
 });
+
+const loadLikeImage = async () => {
+  imageStore.likeImageList = true;
+  imageStore.myImageList = false;
+  imageStore.loadImages();
+
+  console.log(imageStore.images);
+};
 </script>
 
 <template>
@@ -102,6 +115,12 @@ onUnmounted(() => {
               :key="tab"
               :value="tab"
               class="text-subtitle-1"
+              @click="
+                tab === '내 좋아요 이미지'
+                  ? loadLikeImage()
+                  : (imageStore.myImageList = true);
+                imageStore.loadImages();
+              "
             >
               {{ tab }}
             </v-tab>
@@ -270,6 +289,12 @@ onUnmounted(() => {
 
             <!-- 계정 설정 탭 -->
             <v-window-item value="내 업로드 이미지">
+              <ImageSearchComponent />
+              <ImageListComponent />
+            </v-window-item>
+
+            <!-- 내 좋아요 이미지 탭 -->
+            <v-window-item value="내 좋아요 이미지">
               <ImageSearchComponent />
               <ImageListComponent />
             </v-window-item>

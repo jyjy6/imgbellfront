@@ -28,6 +28,7 @@ export const useImageStore = defineStore("image", () => {
   const dialog = ref(false);
   const userLikeList = ref<ImageDto[] | null>([]);
   const myImageList = ref(false);
+  const likeImageList = ref(false);
 
   const loginStore = useLoginStore();
 
@@ -122,6 +123,11 @@ export const useImageStore = defineStore("image", () => {
       // 등급 필터링
       if (selectedGrade.value) {
         params.grade = selectedGrade.value;
+      }
+      if (likeImageList.value) {
+        params.likeImageList = true;
+      } else {
+        params.likeImageList = false;
       }
 
       const response = await axios.get<PageResponse>(endpoint, { params });
@@ -242,6 +248,7 @@ export const useImageStore = defineStore("image", () => {
     searchCategory,
     searchQuery,
     myImageList,
+    likeImageList,
 
     // 옵션
     gradeOptions,

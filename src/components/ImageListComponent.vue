@@ -3,6 +3,7 @@ import { useImageStore } from "../stores/imageStore";
 import ImageDetailComponent from "./ImageDetailComponent.vue";
 
 const imageStore = useImageStore();
+
 </script>
 
 <template>
