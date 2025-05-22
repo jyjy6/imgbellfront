@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useS3Upload } from "../composables/useS3Upload";
+import { useS3Upload } from "../composables/안씀useS3Upload";
 
 const props = defineProps<{
   fieldName: string;
@@ -136,3 +136,4 @@ defineExpose({ confirmFile });
   border-radius: 4px;
 }
 </style>
+../composables/안씀useS3Upload

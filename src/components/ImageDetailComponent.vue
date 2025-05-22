@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useImageStore } from "../stores/imageStore";
+import { useLoginStore } from "../stores/loginStore";
 
 const imageStore = useImageStore();
+const loginStore = useLoginStore();
 </script>
 
 <template>
@@ -100,13 +102,26 @@ const imageStore = useImageStore();
 
             <v-btn
               block
-              variant="text"
+              variant="outlined"
               prepend-icon="mdi-heart"
               class="mt-2"
               :color="imageStore.isLiked ? 'red' : ''"
               @click="imageStore.toggleLike"
             >
               {{ imageStore.isLiked ? "좋아요 취소" : "좋아요" }}
+            </v-btn>
+            <v-btn
+              block
+              variant="outlined"
+              class="mt-2"
+              color="warning"
+              @click="imageStore.deleteImage"
+              v-if="
+                imageStore.selectedImage.uploaderName ===
+                loginStore.user?.username
+              "
+            >
+              삭제
             </v-btn>
           </v-col>
         </v-row>

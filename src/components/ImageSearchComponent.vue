@@ -13,7 +13,7 @@ const imageStore = useImageStore();
             v-model="imageStore.searchQuery"
             label="검색"
             prepend-inner-icon="mdi-tag"
-            @keyup.enter="imageStore.searchByTag(imageStore.searchTag)"
+            @keyup.enter="imageStore.loadImages"
             clearable
           ></v-text-field>
         </v-col>

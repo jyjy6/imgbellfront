@@ -2,12 +2,14 @@ import { ref } from "vue";
 import axios from "axios";
 import { useLoginStore } from "../stores/loginStore";
 import type { ImageMetadata } from "../types/ImageTypes";
+import { useRouter } from "vue-router";
 
 export function useImageS3Upload() {
   const loginStore = useLoginStore();
   const files = ref<File[]>([]);
   const imageMetadataForms = ref<ImageMetadata[]>([]);
   const isUploading = ref(false);
+  const router = useRouter();
 
   // 파일 선택 핸들러
   const handleFileSelect = () => {
@@ -108,6 +110,9 @@ export function useImageS3Upload() {
 
       // 성공 처리
       alert("모든 이미지가 성공적으로 업로드되었습니다.");
+
+      router.push("/mypage");
+      window.location.reload();
 
       // 폼 초기화
       files.value = [];

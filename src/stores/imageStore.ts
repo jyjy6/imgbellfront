@@ -52,6 +52,8 @@ export const useImageStore = defineStore("image", () => {
     sortOption.value = "newest";
     searchCategory.value = "all";
     searchQuery.value = "";
+    myImageList.value = false;
+    likeImageList.value = false;
     loadImages();
   };
   // 등급별 색상 매핑
@@ -89,8 +91,9 @@ export const useImageStore = defineStore("image", () => {
       };
 
       // 정렬 옵션 처리
+
       if (sortOption.value === "popular") {
-        endpoint = "/api/image/popular";
+        params.sort = "viewCount,desc";
       } else if (sortOption.value === "newest") {
         params.sort = "id,desc";
       } else if (sortOption.value === "mostLiked") {
@@ -117,7 +120,8 @@ export const useImageStore = defineStore("image", () => {
       } else {
         params.myImageList = false;
       }
-
+      console.log("서치태그");
+      console.log(searchQuery.value);
       console.log(params);
 
       // 등급 필터링
@@ -154,6 +158,7 @@ export const useImageStore = defineStore("image", () => {
 
   // 태그로 검색
   const searchByTag = (tag: string) => {
+    searchQuery.value = tag;
     searchTag.value = tag;
     dialog.value = false; // 다이얼로그 닫기
     page.value = 1; // 페이지 초기화
@@ -206,6 +211,25 @@ export const useImageStore = defineStore("image", () => {
   };
 
   //좋아요 기능 끝 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+  //이미지 삭제
+  const deleteImage = async () => {
+    //이미지 업로더명과 로그인한유저가 다르면 X
+    if (!(selectedImage.value?.uploaderName === loginStore.user?.username)) {
+      return;
+    }
+
+    try {
+      const response = await axios.delete(
+        `/api/image/delete/${selectedImage.value!.id}`
+      );
+      console.log(response.data);
+      alert(response.data);
+      window.location.reload();
+    } catch (error) {
+      console.log("에러남" + error);
+    }
+  };
 
   // 이미지 다운로드
   const downloadImage = async () => {
@@ -265,5 +289,6 @@ export const useImageStore = defineStore("image", () => {
     closeDialog,
     resetAll,
     fetchUserLikes,
+    deleteImage,
   };
 });

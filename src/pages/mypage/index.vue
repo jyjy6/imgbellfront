@@ -11,6 +11,13 @@ import { onUnmounted } from "vue";
 
 const loginStore = useLoginStore();
 
+// 선택된 플랜 (monthly | yearly)
+const selectedPlan = ref<"monthly" | "yearly" | null>("monthly");
+
+const selectPlan = (plan: "monthly" | "yearly") => {
+  selectedPlan.value = plan;
+};
+
 const tabs = ref([
   "프로필",
   "내 업로드 이미지",
@@ -78,9 +85,7 @@ onMounted(() => {
   imageStore.loadImages();
 });
 onUnmounted(() => {
-  imageStore.myImageList = false;
-  console.log("마이페이지리스트밸류");
-  console.log(imageStore.myImageList);
+  imageStore.resetAll();
 });
 
 const loadLikeImage = async () => {
@@ -362,7 +367,7 @@ const loadLikeImage = async () => {
                       <v-card-actions>
                         <v-btn
                           v-if="!loginStore.getUser?.isPremium"
-                          color="purple"
+                          color="warning"
                           variant="flat"
                           block
                         >
@@ -408,15 +413,25 @@ const loadLikeImage = async () => {
                       <v-card-title class="text-h6">멤버십 플랜</v-card-title>
                       <v-card-text>
                         <v-row>
+                          <!-- 월간 플랜 -->
                           <v-col cols="12" md="6">
-                            <v-card variant="outlined">
+                            <v-card
+                              variant="outlined"
+                              :color="
+                                selectedPlan === 'monthly'
+                                  ? 'blue'
+                                  : 'blue-lighten-5'
+                              "
+                              @click="selectPlan('monthly')"
+                              class="cursor-pointer"
+                            >
                               <v-card-title>월간 플랜</v-card-title>
                               <v-card-text>
                                 <div class="text-h5 mb-2">9,900원/월</div>
-                                <ul>
-                                  <li>모든 프리미엄 기능 이용</li>
-                                  <li>언제든지 취소 가능</li>
-                                </ul>
+                                <v-ul>
+                                  <v-li>모든 프리미엄 기능 이용</v-li>
+                                  <v-li>언제든지 취소 가능</v-li>
+                                </v-ul>
                               </v-card-text>
                               <v-card-actions>
                                 <v-btn color="primary" variant="flat" block>
@@ -426,23 +441,33 @@ const loadLikeImage = async () => {
                             </v-card>
                           </v-col>
 
+                          <!-- 연간 플랜 -->
                           <v-col cols="12" md="6">
-                            <v-card variant="outlined" color="purple-lighten-5">
-                              <v-card-title
-                                >연간 플랜
+                            <v-card
+                              variant="outlined"
+                              :color="
+                                selectedPlan === 'yearly'
+                                  ? 'purple'
+                                  : 'purple-lighten-5'
+                              "
+                              @click="selectPlan('yearly')"
+                              class="cursor-pointer"
+                            >
+                              <v-card-title>
+                                연간 플랜
                                 <v-chip
                                   color="success"
                                   size="small"
                                   class="ml-2"
                                   >20% 할인</v-chip
-                                ></v-card-title
-                              >
+                                >
+                              </v-card-title>
                               <v-card-text>
-                                <div class="text-h5 mb-2">99,000원/년</div>
-                                <ul>
-                                  <li>모든 프리미엄 기능 이용</li>
-                                  <li>2개월 무료 혜택</li>
-                                </ul>
+                                <div class="text-h5 mb-2">95,000원/년</div>
+                                <v-ul>
+                                  <v-li>모든 프리미엄 기능 이용</v-li>
+                                  <v-li>2개월 무료 혜택</v-li>
+                                </v-ul>
                               </v-card-text>
                               <v-card-actions>
                                 <v-btn color="purple" variant="flat" block>
