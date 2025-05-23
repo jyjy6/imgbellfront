@@ -3,7 +3,6 @@ import { useImageStore } from "../stores/imageStore";
 import ImageDetailComponent from "./ImageDetailComponent.vue";
 
 const imageStore = useImageStore();
-
 </script>
 
 <template>
@@ -55,6 +54,17 @@ const imageStore = useImageStore();
                 ></v-btn>
               </div>
             </v-overlay>
+            <v-overlay
+              v-if="!image.isPublic"
+              contained
+              class="d-flex align-center justify-center"
+              opacity="0.7"
+            >
+              <div class="text-center">
+                <v-icon color="white" size="large">mdi-lock</v-icon>
+                <div class="text-white text-h6 mt-2">비공개</div>
+              </div>
+            </v-overlay>
 
             <v-chip
               v-if="image.imageGrade"
@@ -64,7 +74,50 @@ const imageStore = useImageStore();
             >
               {{ image.imageGrade }}
             </v-chip>
+            <v-overlay
+              v-if="!image.isPublic"
+              contained
+              class="d-flex align-end"
+              opacity="0.3"
+            >
+              <v-sheet
+                class="w-100 pa-2"
+                color="red-darken-2"
+                variant="elevated"
+              >
+                <div class="d-flex align-center">
+                  <v-icon color="white" size="small">mdi-lock</v-icon>
+                  <span class="text-white text-caption ml-1"
+                    >비공개 이미지</span
+                  >
+                </div>
+              </v-sheet>
+            </v-overlay>
           </v-img>
+          <v-chip
+            v-if="!image.isPublic"
+            class="position-absolute"
+            style="top: 8px; right: 8px; z-index: 2"
+            color="red-darken-2"
+            size="small"
+            variant="elevated"
+          >
+            <v-icon start>mdi-lock</v-icon>
+            비공개
+          </v-chip>
+          <v-overlay
+            v-if="!image.isPublic"
+            contained
+            class="d-flex align-end"
+            opacity="0.3"
+          >
+            <v-sheet class="w-100 pa-2" color="red-darken-2" variant="elevated">
+              <div class="d-flex align-center">
+                <v-icon color="white" size="small">mdi-lock</v-icon>
+                <span class="text-white text-caption ml-1">비공개 이미지</span>
+              </div>
+            </v-sheet>
+          </v-overlay>
 
           <v-card-title class="text-subtitle-1 text-truncate">
             {{ image.imageName }}

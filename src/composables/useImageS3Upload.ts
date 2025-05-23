@@ -2,52 +2,50 @@ import { ref } from "vue";
 import axios from "axios";
 import { useLoginStore } from "../stores/loginStore";
 import type { ImageMetadata } from "../types/ImageTypes";
-import { useRouter } from "vue-router";
 
 export function useImageS3Upload() {
   const loginStore = useLoginStore();
-  const files = ref<File[]>([]);
   const imageMetadataForms = ref<ImageMetadata[]>([]);
   const isUploading = ref(false);
-  const router = useRouter();
 
-  // 파일 선택 핸들러
-  const handleFileSelect = () => {
-    // 기존 메타데이터 폼 초기화
-    imageMetadataForms.value = [];
+  // 임시 URL과 실제 S3 URL 매핑을 위한 Map
+  const urlMappings = ref<Map<string, string>>(new Map());
 
-    // 선택된 파일들에 대해 메타데이터 폼 생성
-    files.value.forEach((file) => {
-      // 파일 미리보기 URL 생성
-      const previewUrl = URL.createObjectURL(file);
+  // 에디터용 파일 선택 핸들러 (단일 파일)
+  const handleFileSelect = async (file: File): Promise<string> => {
+    if (!file) return "";
 
-      // 기본 메타데이터 폼 생성
-      imageMetadataForms.value.push({
-        file,
-        previewUrl,
-        imageUrl: "",
-        imageName: file.name, // 기본값으로 파일 이름 사용
-        uploaderName: loginStore.user?.username || "GUEST",
-        tags: [],
-        imageGrade: "GENERAL",
-        isPublic: true,
-        fileSize: file.size, // 파일 크기 (bytes 단위)
-        fileType: file.type, // 파일 MIME 타입
-      });
-    });
+    // 임시 미리보기 URL 생성
+    const tempUrl = URL.createObjectURL(file);
+
+    // 메타데이터 생성
+    const imageMetadata: ImageMetadata = {
+      file,
+      previewUrl: tempUrl,
+      imageUrl: "", // 나중에 S3 URL로 업데이트
+      imageName: file.name,
+      uploaderName: loginStore.user?.username || "GUEST",
+      tags: [],
+      imageGrade: "GENERAL",
+      isPublic: true,
+      fileSize: file.size,
+      fileType: file.type,
+    };
+
+    imageMetadataForms.value.push(imageMetadata);
+
+    return tempUrl; // 에디터에서 즉시 사용할 임시 URL 반환
   };
 
+  // 모든 이미지를 S3에 업로드하고 URL 매핑 생성
   const uploadImages = async (isRegister?: boolean): Promise<string | void> => {
+    if (imageMetadataForms.value.length === 0) return;
+
     isUploading.value = true;
 
     try {
-      // 각 이미지 업로드 및 URL 획득
       const uploadPromises = imageMetadataForms.value.map(async (imageInfo) => {
-        // FormData를 사용한 파일 업로드
-        const formData = new FormData();
-        formData.append("file", imageInfo.file);
-
-        // 임시 S3 URL 획득
+        // Presigned URL 요청
         const urlResponse = await axios.get("/api/image/presigned-url", {
           params: {
             filename: imageInfo.file.name,
@@ -55,81 +53,110 @@ export function useImageS3Upload() {
           },
         });
 
-        // S3 업로드
-        // await axios.put(urlResponse.data.presignedUrl, imageInfo.file, {
-        //   headers: { "Content-Type": imageInfo.file.type },
-        // });
-
+        // S3에 파일 업로드
         await fetch(urlResponse.data.presignedUrl, {
           method: "PUT",
           body: imageInfo.file,
+          headers: {
+            "Content-Type": imageInfo.file.type,
+          },
         });
 
-        // 이미지 URL 저장
-        imageInfo.imageUrl = urlResponse.data.imageUrl;
+        // S3 URL 저장
+        const s3Url = urlResponse.data.imageUrl;
+        imageInfo.imageUrl = s3Url;
 
         if (isRegister) {
           imageMetadataForms.value[0].imageUrl = urlResponse.data.imageUrl;
         }
 
-        // 회원가입일시 Image테이블에 upload는 하지 않음
+        // 임시 URL -> S3 URL 매핑 저장
+        urlMappings.value.set(imageInfo.previewUrl, s3Url);
+
+        return imageInfo;
       });
 
-      // 모든 파일 업로드 대기
       await Promise.all(uploadPromises);
 
       if (isRegister) {
         return imageMetadataForms.value[0].imageUrl || "";
       }
 
-      // 메타데이터와 함께 백엔드에 이미지 정보 전송
-      const imageUploadData = imageMetadataForms.value.map((info) => ({
-        imageUrl: info.imageUrl,
-        imageName: info.imageName,
-        tags: info.tags,
-        source: info.source,
-        artist: info.artist,
-        imageGrade: info.imageGrade,
-        isPublic: info.isPublic,
-        uploaderName: info.uploaderName,
-        fileSize: info.fileSize,
-        fileType: info.fileType,
-      }));
-
-      console.log("이미지 데이터들:");
-      console.log(imageUploadData);
-      try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/image/upload`,
-          imageUploadData
-        );
-        console.log(response.data);
-      } catch (error) {
-        console.error("에러남" + error);
-      }
-
-      // 성공 처리
-      alert("모든 이미지가 성공적으로 업로드되었습니다.");
-
-      router.push("/mypage");
-      window.location.reload();
-
-      // 폼 초기화
-      files.value = [];
-      imageMetadataForms.value = [];
+      console.log("모든 이미지 업로드 완료");
     } catch (error) {
       console.error("이미지 업로드 중 오류 발생:", error);
-      alert("이미지 업로드 중 오류가 발생했습니다.");
+      throw error;
     } finally {
       isUploading.value = false;
     }
   };
 
+  // 에디터 콘텐츠의 임시 URL을 S3 URL로 변환
+  const replaceUrlsInContent = (htmlContent: string): string => {
+    let updatedContent = htmlContent;
+
+    urlMappings.value.forEach((s3Url, tempUrl) => {
+      // 모든 임시 URL을 S3 URL로 교체
+      updatedContent = updatedContent.replace(new RegExp(tempUrl, "g"), s3Url);
+    });
+
+    return updatedContent;
+  };
+
+  // 이미지 메타데이터를 백엔드에 저장
+  const saveImageMetadata = async (): Promise<void> => {
+    if (imageMetadataForms.value.length === 0) return;
+
+    const imageUploadData = imageMetadataForms.value.map((info) => ({
+      imageUrl: info.imageUrl,
+      imageName: info.imageName,
+      tags: info.tags,
+      source: info.source,
+      artist: info.artist,
+      imageGrade: info.imageGrade,
+      isPublic: info.isPublic,
+      uploaderName: info.uploaderName,
+      fileSize: info.fileSize,
+      fileType: info.fileType,
+    }));
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/image/upload`,
+        imageUploadData
+      );
+      console.log(response.data);
+      console.log("이미지 메타데이터 저장 완료");
+    } catch (error) {
+      console.error("에러남" + error);
+      console.error("이미지 메타데이터 저장 중 오류:", error);
+      throw error;
+    }
+  };
+
+  // 리소스 정리
+  const cleanup = (): void => {
+    // 임시 URL들 해제
+    imageMetadataForms.value.forEach((info) => {
+      if (info.previewUrl) {
+        URL.revokeObjectURL(info.previewUrl);
+      }
+    });
+
+    // 상태 초기화
+    imageMetadataForms.value = [];
+    urlMappings.value.clear();
+  };
+
   return {
     uploadImages,
     handleFileSelect,
-    files,
+    files: ref<File[]>([]), // 기존 코드 호환성을 위해 추가
     imageMetadataForms,
     isUploading,
+    replaceUrlsInContent,
+    saveImageMetadata,
+    cleanup,
+    urlMappings,
   };
 }

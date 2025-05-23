@@ -440,7 +440,7 @@ onMounted(() => {
       <v-list>
         <v-list-item prepend-icon="mdi-home" title="홈" to="/"></v-list-item>
 
-        <v-list-group value="gallery">
+        <!-- <v-list-group value="gallery">
           <template v-slot:activator="{ props }">
             <v-list-item
               v-bind="props"
@@ -452,7 +452,7 @@ onMounted(() => {
           <v-list-item title="최신 이미지" to="/gallery/recent"></v-list-item>
           <v-list-item title="인기 이미지" to="/gallery/popular"></v-list-item>
           <v-list-item title="랜덤 이미지" to="/gallery/random"></v-list-item>
-        </v-list-group>
+        </v-list-group> -->
 
         <v-list-item
           prepend-icon="mdi-tag-multiple"

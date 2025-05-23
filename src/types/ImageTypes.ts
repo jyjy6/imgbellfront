@@ -25,6 +25,7 @@ export interface ImageDto {
   likeCount: number;
   viewCount: number;
   imageGrade: string;
+  isPublic: boolean;
 }
 
 export interface ImageDetailDto {
