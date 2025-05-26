@@ -14,7 +14,11 @@ const contentFields = [
 
 <template>
   <h3>포럼 글 작성</h3>
-  <EditorComponent URL="/api/forum/post" :fields="contentFields" />
+  <EditorComponent
+    URL="/api/forum/post"
+    :fields="contentFields"
+    :redirectURL="'/forum'"
+  />
 </template>
 
 <style scoped></style>

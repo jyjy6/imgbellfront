@@ -178,8 +178,9 @@ export const useImageStore = defineStore("image", () => {
       (image) => image.id === selectedImage.value?.id
     );
   });
+  
   const fetchUserLikes = async () => {
-    console.log("유저좋아요 발동");
+    
     if (!selectedImage.value) return;
     if (!loginStore.getUser) {
       return;

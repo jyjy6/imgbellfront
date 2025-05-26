@@ -11,30 +11,49 @@ export function useImageS3Upload() {
   // 임시 URL과 실제 S3 URL 매핑을 위한 Map
   const urlMappings = ref<Map<string, string>>(new Map());
 
-  // 에디터용 파일 선택 핸들러 (단일 파일)
-  const handleFileSelect = async (file: File): Promise<string> => {
-    if (!file) return "";
+  // 에디터용 파일 선택 핸들러 (단일 파일or이벤트)
+  const handleFileSelect = async (event: Event | File): Promise<string> => {
+    let file: File | null = null;
 
-    // 임시 미리보기 URL 생성
-    const tempUrl = URL.createObjectURL(file);
+    // 이벤트 객체인 경우 파일 추출
+    if (event instanceof Event) {
+      const input = event.target as HTMLInputElement;
+      if (input.files && input.files.length > 0) {
+        file = input.files[0];
+      }
+    } else if (event instanceof File) {
+      file = event;
+    }
 
-    // 메타데이터 생성
-    const imageMetadata: ImageMetadata = {
-      file,
-      previewUrl: tempUrl,
-      imageUrl: "", // 나중에 S3 URL로 업데이트
-      imageName: file.name,
-      uploaderName: loginStore.user?.username || "GUEST",
-      tags: [],
-      imageGrade: "GENERAL",
-      isPublic: true,
-      fileSize: file.size,
-      fileType: file.type,
-    };
+    if (!file) {
+      console.error("유효하지 않은 파일입니다:", event);
+      return "";
+    }
 
-    imageMetadataForms.value.push(imageMetadata);
+    try {
+      // 임시 미리보기 URL 생성
+      const tempUrl = URL.createObjectURL(file);
 
-    return tempUrl; // 에디터에서 즉시 사용할 임시 URL 반환
+      // 메타데이터 생성
+      const imageMetadata: ImageMetadata = {
+        file,
+        previewUrl: tempUrl,
+        imageUrl: "", // 나중에 S3 URL로 업데이트
+        imageName: file.name,
+        uploaderName: loginStore.user?.username || "GUEST",
+        tags: [],
+        imageGrade: "GENERAL",
+        isPublic: true,
+        fileSize: file.size,
+        fileType: file.type,
+      };
+
+      imageMetadataForms.value.push(imageMetadata);
+      return tempUrl;
+    } catch (error) {
+      console.error("파일 URL 생성 중 오류 발생:", error);
+      return "";
+    }
   };
 
   // 모든 이미지를 S3에 업로드하고 URL 매핑 생성
@@ -78,6 +97,7 @@ export function useImageS3Upload() {
 
       await Promise.all(uploadPromises);
 
+      //회원가입시엔 그냥 이미지 URL하나만 반환
       if (isRegister) {
         return imageMetadataForms.value[0].imageUrl || "";
       }

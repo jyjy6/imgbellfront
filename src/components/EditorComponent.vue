@@ -171,7 +171,7 @@ import Link from "@tiptap/extension-link";
 import { reactive } from "vue";
 import axios from "axios";
 import { useImageS3Upload } from "../composables/useImageS3Upload";
-import { useLoginStore } from "../stores/loginStore";
+import router from "../router";
 
 // 상태 관리
 const title = ref("");
@@ -190,6 +190,7 @@ const props = defineProps<{
     contentsTag?: string[];
     multiple?: boolean;
   }[];
+  redirectURL?: string;
 }>();
 
 // S3 업로드 컴포저블
@@ -198,7 +199,6 @@ const {
   handleFileSelect,
   isUploading,
   replaceUrlsInContent,
-  saveImageMetadata,
   cleanup,
 } = useImageS3Upload();
 
@@ -259,7 +259,6 @@ const onFileSelect = async (event: Event) => {
   }
 };
 
-const loginStore = useLoginStore();
 // 포스트 저장
 const savePost = async () => {
   if (!editor.value) return;
@@ -278,8 +277,6 @@ const savePost = async () => {
     const postData = {
       title: title.value,
       content: updatedContent, // 변환된 콘텐츠 사용
-      authorDisplayName: loginStore.user?.displayName,
-      
       ...formValues, // 동적 필드 값 포함
     };
 
@@ -290,13 +287,13 @@ const savePost = async () => {
     );
 
     // 5. 이미지 메타데이터 저장 (필요한 경우)
-    await saveImageMetadata();
+    // await saveImageMetadata();
 
     console.log("성공적으로 전송되었습니다:", response.data);
     alert("포스트가 저장되었습니다!");
 
     // 페이지 리로드 또는 리다이렉트
-    window.location.reload();
+    router.push(props.redirectURL || "/forum");
   } catch (error) {
     console.error("포스트 저장 중 오류 발생:", error);
     alert("포스트 저장 중 오류가 발생했습니다.");

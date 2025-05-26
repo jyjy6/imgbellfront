@@ -1,0 +1,267 @@
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
+import axios from "axios";
+import type { Forum, ForumComment } from "../types/ForumTypes";
+import { useRouter } from "vue-router";
+import { useLoginStore } from "./loginStore";
+
+export const useForumStore = defineStore("forum", () => {
+  const posts = ref<Forum[]>([]);
+  const currentPage = ref(1);
+  const totalPages = ref(1);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const singlePost = ref<Forum | null>(null);
+  const comments = ref<ForumComment[]>([]);
+  const noticeList = ref<Forum[]>([]);
+  const router = useRouter();
+  const loginStore = useLoginStore();
+  const userLikeList = ref<Forum[]>([]);
+
+  const fetchNoticeList = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/list`,
+        {
+          params: {
+            page: 0, // Spring Boot는 0-based pagination을 사용
+            size: 10,
+            forumType: "NOTICE",
+          },
+        }
+      );
+      noticeList.value = response.data.content;
+    } catch (err) {
+      console.error("공지사항 목록 조회 실패:", err);
+      error.value = "공지사항 목록을 불러오는데 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchPosts = async (page: number = 1) => {
+    loading.value = true;
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/list`,
+        {
+          params: {
+            page: page - 1, // Spring Boot는 0-based pagination을 사용
+            size: 10,
+          },
+        }
+      );
+      posts.value = response.data.content;
+      totalPages.value = response.data.totalPages;
+      currentPage.value = page;
+    } catch (err) {
+      console.error("게시글 목록 조회 실패:", err);
+      error.value = "게시글 목록을 불러오는데 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchSinglePost = async (postId: number) => {
+    console.log("postId스토어", postId);
+    loading.value = true;
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/${postId}`
+      );
+      singlePost.value = response.data;
+    } catch (err) {
+      console.error("게시글 조회 실패:", err);
+      error.value = "게시글을 불러오는데 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchComments = async (postId: number) => {
+    loading.value = true;
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/comment/${postId}`
+      );
+      console.log(response.data);
+      comments.value = response.data;
+    } catch (err) {
+      console.error("댓글 조회 실패:", err);
+      error.value = "댓글을 불러오는데 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const forumViewCount = async (postId: number) => {
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/view/${postId}`
+      );
+    } catch (err) {
+      console.error("게시글 조회수 증가 실패:", err);
+      error.value = "게시글 조회수 증가 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+  const deletePost = async (postId: number) => {
+    if (confirm("삭제하면 복구할 방법이 없습니다. 진짜 삭제하시겠습니까?")) {
+      loading.value = true;
+      try {
+        const response = await axios.put(
+          `${import.meta.env.VITE_API_BASE_URL}/api/forum/${postId}`
+        );
+        alert(response.data.message);
+        router.push("/forum");
+      } catch (err) {
+        console.error("게시글 삭제 실패:", err);
+        error.value = "게시글 삭제 실패했습니다.";
+      } finally {
+        loading.value = false;
+      }
+    }
+  };
+  const addComment = async (
+    postId: number,
+    content: string,
+    parent?: number
+  ) => {
+    loading.value = true;
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/comment`,
+        {
+          forumId: postId,
+          content: content,
+          parentId: parent,
+        }
+      );
+      // 댓글 목록 새로고침
+      await fetchComments(postId);
+      return alert(response.data);
+    } catch (err) {
+      console.error("댓글 작성 실패:", err);
+      error.value = "댓글 작성에 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchCommentCount = async (postId: number) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/comment/count/${postId}`
+      );
+      return response.data;
+    } catch (err) {
+      console.error("댓글 개수 조회 실패:", err);
+      error.value = "댓글 개수를 불러오는데 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 좋아요 토글 기능 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+  const isLiked = ref(false);
+
+  // isLiked 상태를 초기화하는 함수
+  const updateLikedStatus = () => {
+    if (
+      !singlePost.value ||
+      !userLikeList.value ||
+      userLikeList.value.length === 0
+    ) {
+      isLiked.value = false;
+      return;
+    }
+
+    isLiked.value = userLikeList.value.some(
+      (forum) => forum.id === singlePost.value?.id
+    );
+  };
+
+  const fetchUserLikes = async () => {
+    loading.value = true;
+    if (singlePost.value) return;
+    if (!loginStore.getUser) {
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `/api/forumlike/member/${loginStore.getUser!.id}`
+      );
+      userLikeList.value = response.data;
+      updateLikedStatus();
+    } catch (err) {
+      console.error("좋아요 목록 조회 실패:", err);
+      error.value = "좋아요 목록을 불러오는데 실패했습니다.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const toggleLike = async () => {
+    loading.value = true;
+    if (!singlePost.value) return;
+    if (!loginStore.user) return alert("좋아요 기능을 사용하려면 로그인하세요");
+
+    try {
+      // UI 즉시 업데이트
+      isLiked.value = !isLiked.value;
+
+      if (singlePost.value) {
+        singlePost.value.likeCount = isLiked.value
+          ? singlePost.value.likeCount + 1
+          : singlePost.value.likeCount - 1;
+      }
+
+      const response = await axios.post(`/api/forumlike`, {
+        memberId: loginStore.user.id, // 로그인 유저 ID
+        forumId: singlePost.value.id, // 현재 포스트 ID
+      });
+      await fetchUserLikes();
+
+      if (isLiked) {
+        singlePost.value.likeCount + 1;
+      }
+      console.log(response.data);
+    } catch (err) {
+      console.error(err);
+      alert("에러 발생");
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  //좋아요 기능 끝 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+  return {
+    //상태
+    posts,
+    currentPage,
+    totalPages,
+    loading,
+    error,
+    comments,
+    singlePost,
+    noticeList,
+    isLiked,
+    userLikeList,
+
+    //메소드
+    fetchPosts,
+    fetchSinglePost,
+    fetchComments,
+    fetchNoticeList,
+    forumViewCount,
+    deletePost,
+    addComment,
+    fetchCommentCount,
+    fetchUserLikes,
+    toggleLike,
+  };
+});

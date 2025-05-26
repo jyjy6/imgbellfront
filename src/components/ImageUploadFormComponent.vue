@@ -150,7 +150,7 @@
         <v-btn
           color="primary"
           block
-          @click="uploadImages(false)"
+          @click="uploadImage"
           :disabled="isUploading"
         >
           {{ isUploading ? "업로드 중..." : "이미지 업로드" }}
@@ -178,6 +178,7 @@ const {
   imageMetadataForms,
   isUploading,
   uploadImages,
+  saveImageMetadata,
   handleFileSelect,
 } = useImageS3Upload();
 // 태그 제거 함수
@@ -236,6 +237,16 @@ onMounted(() => {
 });
 
 // 이미지 업로드 함수
+const uploadImage = async () => {
+  try {
+    await uploadImages();
+    await saveImageMetadata();
+    alert("이미지 업로드 성공!");
+  } catch (error) {
+    console.error("이미지 업로드 실패:", error);
+    alert("이미지 업로드 실패!");
+  }
+};
 </script>
 
 <style scoped>

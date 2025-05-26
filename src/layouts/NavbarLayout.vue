@@ -388,6 +388,13 @@ onMounted(() => {
       >
         업로드
       </v-btn>
+      <v-btn
+        prepend-icon="mdi-forum"
+        class="ml-2"
+        @click="router.push('/forum')"
+      >
+        포럼
+      </v-btn>
 
       <!-- User Menu -->
       <v-menu location="bottom">
