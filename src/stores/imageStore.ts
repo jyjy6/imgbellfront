@@ -178,9 +178,8 @@ export const useImageStore = defineStore("image", () => {
       (image) => image.id === selectedImage.value?.id
     );
   });
-  
+
   const fetchUserLikes = async () => {
-    
     if (!selectedImage.value) return;
     if (!loginStore.getUser) {
       return;
@@ -252,6 +251,29 @@ export const useImageStore = defineStore("image", () => {
     }
   };
 
+  //이미지 공개로 변경
+  const togglePublic = async () => {
+    if (!selectedImage.value) return;
+    if (!loginStore.getUser) return;
+
+    try {
+      const response = await axios.put(
+        `/api/image/ispublic/${selectedImage.value.id}`
+      );
+
+      // 응답 데이터에서 isPublic 값만 추출해서 업데이트
+      selectedImage.value.isPublic = response.data.isPublic;
+      alert("이미지 공개 상태가 변경되었습니다.");
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.data?.error) {
+        alert(error.response.data.error);
+      } else {
+        alert("오류가 발생했습니다.");
+      }
+      console.log("에러남", error);
+    }
+  };
+
   // 다이얼로그 닫기
   const closeDialog = () => {
     dialog.value = false;
@@ -291,5 +313,6 @@ export const useImageStore = defineStore("image", () => {
     resetAll,
     fetchUserLikes,
     deleteImage,
+    togglePublic,
   };
 });

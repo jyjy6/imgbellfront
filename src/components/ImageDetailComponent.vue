@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { useImageStore } from "../stores/imageStore";
 import { useLoginStore } from "../stores/loginStore";
-
+import { useRouter } from "vue-router";
 const imageStore = useImageStore();
 const loginStore = useLoginStore();
+const router = useRouter();
+
+const editImage = () => {
+  router.push({
+    name: "ImageEdit",
+    params: { imageId: imageStore.selectedImage?.id },
+  });
+};
 </script>
 
 <template>
@@ -122,6 +130,36 @@ const loginStore = useLoginStore();
               "
             >
               삭제
+            </v-btn>
+            <v-btn
+              block
+              variant="outlined"
+              class="mt-2"
+              :color="imageStore.selectedImage.isPublic ? 'error' : 'primary'"
+              @click="imageStore.togglePublic"
+              v-if="
+                imageStore.selectedImage.uploaderName ===
+                loginStore.user?.username
+              "
+            >
+              {{
+                imageStore.selectedImage.isPublic
+                  ? "비공개로 변경"
+                  : "공개로 변경"
+              }}
+            </v-btn>
+            <v-btn
+              block
+              variant="outlined"
+              class="mt-2"
+              color="primary"
+              @click="editImage"
+              v-if="
+                imageStore.selectedImage.uploaderName ===
+                loginStore.user?.username
+              "
+            >
+              수정
             </v-btn>
           </v-col>
         </v-row>

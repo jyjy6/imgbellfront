@@ -3,6 +3,7 @@ import type { UserInfo } from "./UserInfoTypes";
 
 //폼 전송 전용
 export interface ImageMetadata {
+  id?: number;
   file: File;
   previewUrl: string;
   imageUrl: string;

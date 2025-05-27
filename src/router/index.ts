@@ -27,6 +27,13 @@ const routes: Array<RouteRecordRaw> = [
       import(/* webpackChunkName: "imageupload" */ "../pages/image/upload.vue"),
   },
   {
+    path: "/image/edit/:imageId",
+    name: "ImageEdit",
+    component: () =>
+      import(/* webpackChunkName: "imageedit" */ "../pages/image/edit.vue"),
+    props: true, // imageId를 props로 전달
+  },
+  {
     path: "/mypage",
     name: "MyPage",
     component: () =>
@@ -65,6 +72,13 @@ const routes: Array<RouteRecordRaw> = [
     name: "ForumPost",
     component: () =>
       import(/* webpackChunkName: "formpost" */ "../pages/forum/post.vue"),
+  },
+  {
+    path: "/forum/edit/:postId",
+    name: "ForumEdit",
+    component: () =>
+      import(/* webpackChunkName: "formedit" */ "../pages/forum/edit.vue"),
+    props: true, // postId를 props로 전달
   },
 ];
 

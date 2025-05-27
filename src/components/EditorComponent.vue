@@ -172,6 +172,8 @@ import { reactive } from "vue";
 import axios from "axios";
 import { useImageS3Upload } from "../composables/useImageS3Upload";
 import router from "../router";
+import { onMounted } from "vue";
+import type { ForumFormDto } from "../types/ForumTypes";
 
 // 상태 관리
 const title = ref("");
@@ -191,6 +193,8 @@ const props = defineProps<{
     multiple?: boolean;
   }[];
   redirectURL?: string;
+  isPut?: boolean;
+  getURL?: string;
 }>();
 
 // S3 업로드 컴포저블
@@ -223,6 +227,21 @@ const editor = useEditor({
         "prose prose-sm sm:prose lg:prose-lg mx-auto focus:outline-none p-4",
     },
   },
+});
+
+onMounted(async () => {
+  if (props.isPut) {
+    try {
+      const postData = await axios.get<ForumFormDto>(
+        `${import.meta.env.VITE_API_BASE_URL}` + props.getURL
+      );
+      title.value = postData.data.title;
+      editor.value?.commands.setContent(postData.data.content);
+      formValues.type = postData.data.type;
+    } catch (error) {
+      console.error("포스트 데이터 가져오기 중 오류:", error);
+    }
+  }
 });
 
 // 파일 입력 트리거
@@ -280,19 +299,25 @@ const savePost = async () => {
       ...formValues, // 동적 필드 값 포함
     };
 
-    // 4. 포스트 저장
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}` + props.URL,
-      postData
-    );
-
+    // 4. 포스트 저장 / 수정
+    if (props.isPut) {
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}` + props.URL,
+        postData
+      );
+      console.log("수정완료", response.data);
+    } else {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}` + props.URL,
+        postData
+      );
+      console.log("성공적으로 전송되었습니다:", response.data);
+    }
     // 5. 이미지 메타데이터 저장 (필요한 경우)
     // await saveImageMetadata();
-
-    console.log("성공적으로 전송되었습니다:", response.data);
+    
     alert("포스트가 저장되었습니다!");
-
-    // 페이지 리로드 또는 리다이렉트
+    
     router.push(props.redirectURL || "/forum");
   } catch (error) {
     console.error("포스트 저장 중 오류 발생:", error);

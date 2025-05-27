@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useForumStore } from "../../stores/forumStore";
 import type { ForumComment } from "../../types/ForumTypes";
 import { useLoginStore } from "../../stores/loginStore";
+import { onUnmounted } from "vue";
 const route = useRoute();
 const router = useRouter();
 
@@ -23,11 +24,19 @@ onMounted(() => {
   forumStore.fetchUserLikes();
 });
 
-// 더미 댓글 데이터
+onUnmounted(() => {
+  forumStore.isLiked = false;
+  forumStore.userLikeList = [];
+  forumStore.singlePost = null;
+});
 
 // 메서드
 const goBack = () => {
   router.push({ name: "BoardList" });
+};
+
+const editPost = () => {
+  router.push({ name: "ForumEdit", params: { postId: postId.value } });
 };
 
 const formatDate = (dateString: string | undefined) => {
@@ -132,9 +141,14 @@ const reportComment = (commentId: number) => {
                   loginStore.user?.displayName
                 "
               >
-                <v-btn size="small" variant="text" prepend-icon="mdi-pencil"
-                  >수정</v-btn
+                <v-btn
+                  size="small"
+                  variant="text"
+                  prepend-icon="mdi-pencil"
+                  @click="editPost"
                 >
+                  수정
+                </v-btn>
                 <v-btn
                   size="small"
                   variant="text"
