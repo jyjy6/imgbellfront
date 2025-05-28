@@ -18,6 +18,8 @@ const replyTo = ref<number | null>(null);
 const newComment = ref("");
 
 onMounted(() => {
+  forumStore.initViewHistory();
+  
   forumStore.fetchSinglePost(Number(postId.value));
   forumStore.forumViewCount(Number(postId.value));
   forumStore.fetchComments(Number(postId.value));
@@ -93,15 +95,19 @@ const reportComment = (commentId: number) => {
 </script>
 <template>
   <v-container>
-    <!-- 뒤로가기 버튼 -->
-    <v-btn
-      variant="text"
-      prepend-icon="mdi-arrow-left"
-      class="mb-4"
-      @click="goBack"
+    <v-card
+      class="board-header mb-4 pa-5"
+      elevation="3"
+      @click="router.push('/forum')"
     >
-      목록으로
-    </v-btn>
+      <v-card-title class="text-h4 text-white">
+        <v-icon class="mr-3" size="large">mdi-forum</v-icon>
+        자유게시판
+      </v-card-title>
+      <v-card-subtitle class="text-white">
+        자유롭게 소통하는 공간입니다
+      </v-card-subtitle>
+    </v-card>
 
     <!-- 게시글 내용 -->
     <v-card elevation="2">
@@ -179,6 +185,11 @@ const reportComment = (commentId: number) => {
           추천 {{ forumStore.singlePost?.likeCount }}
         </v-btn>
       </v-card-actions>
+      <div class="d-flex justify-end pa-4">
+        <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="goBack">
+          글 목록
+        </v-btn>
+      </div>
     </v-card>
     <!-- 댓글 섹션 -->
     <v-card class="mt-4" elevation="2">
@@ -303,6 +314,10 @@ const reportComment = (commentId: number) => {
 </template>
 
 <style scoped>
+.board-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
 .border-b {
   border-bottom: 1px solid #e0e0e0;
 }

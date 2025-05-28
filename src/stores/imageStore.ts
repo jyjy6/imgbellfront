@@ -147,9 +147,36 @@ export const useImageStore = defineStore("image", () => {
   // 이미지 상세 정보 로드
   const viewImageDetail = async (id: number) => {
     try {
-      const response = await axios.get<ImageDetailDto>(`/api/image/${id}`);
+      // 로컬스토리지 기반으로 조회 기록 초기화
+      initImageViewHistory();
+
+      // 조회수 증가 여부를 파라미터로 전달
+      const params: any = {};
+      if (!viewdImage.value.has(id)) {
+        params.increaseView = true;
+      } else {
+        params.increaseView = false;
+      }
+
+      const response = await axios.get<ImageDetailDto>(`/api/image/${id}`, {
+        params,
+      });
       selectedImage.value = response.data;
       await fetchUserLikes();
+
+      // 조회수가 증가된 경우에만 세션과 로컬스토리지에 기록
+      if (!viewdImage.value.has(id)) {
+        // 조회 성공시 세션에 기록
+        viewdImage.value.add(id);
+
+        // 로컬스토리지에도 저장 (시간 기반 만료)
+        const viewHistory = JSON.parse(
+          localStorage.getItem("image_views") || "{}"
+        );
+        viewHistory[id] = Date.now();
+        localStorage.setItem("image_views", JSON.stringify(viewHistory));
+      }
+
       dialog.value = true;
     } catch (error) {
       console.error("이미지 상세 정보 로드 실패:", error);
@@ -211,6 +238,30 @@ export const useImageStore = defineStore("image", () => {
   };
 
   //좋아요 기능 끝 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+  //조회수 증가 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+  const viewdImage = ref<Set<number>>(new Set()); // 현재 세션에서 조회한 게시글들
+  const initImageViewHistory = () => {
+    const viewHistory = JSON.parse(localStorage.getItem("image_views") || "{}");
+    const now = Date.now();
+    const dayInMs = 24 * 60 * 60 * 1000; // 24시간
+
+    Object.entries(viewHistory).forEach(([imageId, timestamp]) => {
+      if (now - (timestamp as number) < dayInMs) {
+        viewdImage.value.add(Number(imageId));
+      }
+    });
+
+    // 만료된 기록 정리
+    const validHistory = Object.fromEntries(
+      Object.entries(viewHistory).filter(
+        ([_, timestamp]) => now - (timestamp as number) < dayInMs
+      )
+    );
+    localStorage.setItem("image_views", JSON.stringify(validHistory));
+  };
+
+  //
 
   //이미지 삭제
   const deleteImage = async () => {
@@ -314,5 +365,6 @@ export const useImageStore = defineStore("image", () => {
     fetchUserLikes,
     deleteImage,
     togglePublic,
+    initImageViewHistory,
   };
 });

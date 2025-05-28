@@ -94,18 +94,55 @@ export const useForumStore = defineStore("forum", () => {
     }
   };
 
+  //조회수 증가 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+  const viewedPosts = ref<Set<number>>(new Set()); // 현재 세션에서 조회한 게시글들
   const forumViewCount = async (postId: number) => {
+    // 이미 조회한 게시글이면 카운트하지 않음
+    if (viewedPosts.value.has(postId)) {
+      return;
+    }
+
     try {
       const response = await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/forum/view/${postId}`
       );
+
+      // 조회 성공시 세션에 기록
+      viewedPosts.value.add(postId);
+
+      // 로컬스토리지에도 저장 (시간 기반 만료)
+      const viewHistory = JSON.parse(
+        localStorage.getItem("forum_views") || "{}"
+      );
+      viewHistory[postId] = Date.now();
+      localStorage.setItem("forum_views", JSON.stringify(viewHistory));
     } catch (err) {
       console.error("게시글 조회수 증가 실패:", err);
       error.value = "게시글 조회수 증가 실패했습니다.";
-    } finally {
-      loading.value = false;
     }
   };
+  const initViewHistory = () => {
+    const viewHistory = JSON.parse(localStorage.getItem("forum_views") || "{}");
+    const now = Date.now();
+    const dayInMs = 24 * 60 * 60 * 1000; // 24시간
+
+    Object.entries(viewHistory).forEach(([postId, timestamp]) => {
+      if (now - (timestamp as number) < dayInMs) {
+        viewedPosts.value.add(Number(postId));
+      }
+    });
+
+    // 만료된 기록 정리
+    const validHistory = Object.fromEntries(
+      Object.entries(viewHistory).filter(
+        ([_, timestamp]) => now - (timestamp as number) < dayInMs
+      )
+    );
+    localStorage.setItem("forum_views", JSON.stringify(validHistory));
+  };
+
+  //
+
   const deletePost = async (postId: number) => {
     if (confirm("삭제하면 복구할 방법이 없습니다. 진짜 삭제하시겠습니까?")) {
       loading.value = true;
@@ -258,6 +295,7 @@ export const useForumStore = defineStore("forum", () => {
     fetchComments,
     fetchNoticeList,
     forumViewCount,
+    initViewHistory,
     deletePost,
     addComment,
     fetchCommentCount,

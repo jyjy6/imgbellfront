@@ -1,6 +1,6 @@
 <!-- pages/forum.vue -->
 <template>
-  <div>
+  <v-container>
     <!-- 네비게이션 바 (선택사항) -->
     <!-- <v-app-bar v-if="showNavigation" color="primary" dark>
       <v-btn v-if="route.name !== 'Forum'" icon @click="goToList">
@@ -20,7 +20,7 @@
 
     <!-- 자식 컴포넌트가 렌더링되는 부분 -->
     <router-view />
-  </div>
+  </v-container>
 </template>
 
 <script setup lang="ts">
