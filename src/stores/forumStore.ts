@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import axios from "axios";
 import type { Forum, ForumComment } from "../types/ForumTypes";
 import { useRouter } from "vue-router";
@@ -274,7 +274,42 @@ export const useForumStore = defineStore("forum", () => {
     }
   };
 
-  //좋아요 기능 끝 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+  //Elastic Search 검색기능
+
+  const searchResults = ref<Forum[]>([]);
+  const searchLoading = ref(false);
+  const searchKeyword = ref("");
+
+  // 검색 기능
+  const searchPosts = async (keyword: string, page: number = 0) => {
+    searchLoading.value = true;
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/search`,
+        {
+          params: {
+            keyword,
+            page,
+            size: 10,
+          },
+        }
+      );
+      searchResults.value = response.data.content;
+      totalPages.value = response.data.totalPages;
+      currentPage.value = page + 1;
+    } catch (error) {
+      console.error("검색 실패:", error);
+    } finally {
+      searchLoading.value = false;
+    }
+  };
+
+  // 검색 결과 초기화
+  const clearSearch = () => {
+    searchResults.value = [];
+    searchKeyword.value = "";
+    fetchPosts(1); // 일반 게시글 목록으로 복귀
+  };
 
   return {
     //상태
@@ -288,6 +323,9 @@ export const useForumStore = defineStore("forum", () => {
     noticeList,
     isLiked,
     userLikeList,
+    searchResults,
+    searchLoading,
+    searchKeyword,
 
     //메소드
     fetchPosts,
@@ -301,5 +339,7 @@ export const useForumStore = defineStore("forum", () => {
     fetchCommentCount,
     fetchUserLikes,
     toggleLike,
+    searchPosts,
+    clearSearch,
   };
 });

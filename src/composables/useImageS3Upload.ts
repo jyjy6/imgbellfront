@@ -12,47 +12,54 @@ export function useImageS3Upload() {
   const urlMappings = ref<Map<string, string>>(new Map());
 
   // 에디터용 파일 선택 핸들러 (단일 파일or이벤트)
-  const handleFileSelect = async (event: Event | File): Promise<string> => {
-    let file: File | null = null;
+  const handleFileSelect = async (event: Event | File[]): Promise<string[]> => {
+    let files: File[] = [];
 
     // 이벤트 객체인 경우 파일 추출
     if (event instanceof Event) {
       const input = event.target as HTMLInputElement;
-      if (input.files && input.files.length > 0) {
-        file = input.files[0];
+      if (input.files) {
+        files = Array.from(input.files);
       }
-    } else if (event instanceof File) {
-      file = event;
+    } else if (Array.isArray(event)) {
+      files = event;
     }
 
-    if (!file) {
+    if (files.length === 0) {
       console.error("유효하지 않은 파일입니다:", event);
-      return "";
+      return [];
     }
 
     try {
-      // 임시 미리보기 URL 생성
-      const tempUrl = URL.createObjectURL(file);
+      const tempUrls: string[] = [];
 
-      // 메타데이터 생성
-      const imageMetadata: ImageMetadata = {
-        file,
-        previewUrl: tempUrl,
-        imageUrl: "", // 나중에 S3 URL로 업데이트
-        imageName: file.name,
-        uploaderName: loginStore.user?.username || "GUEST",
-        tags: [],
-        imageGrade: "GENERAL",
-        isPublic: true,
-        fileSize: file.size,
-        fileType: file.type,
-      };
+      // 각 파일에 대해 메타데이터 생성
+      for (const file of files) {
+        // 임시 미리보기 URL 생성
+        const tempUrl = URL.createObjectURL(file);
+        tempUrls.push(tempUrl);
 
-      imageMetadataForms.value.push(imageMetadata);
-      return tempUrl;
+        // 메타데이터 생성
+        const imageMetadata: ImageMetadata = {
+          file,
+          previewUrl: tempUrl,
+          imageUrl: "", // 나중에 S3 URL로 업데이트
+          imageName: file.name,
+          uploaderName: loginStore.user?.username || "GUEST",
+          tags: [],
+          imageGrade: "GENERAL",
+          isPublic: true,
+          fileSize: file.size,
+          fileType: file.type,
+        };
+
+        imageMetadataForms.value.push(imageMetadata);
+      }
+
+      return tempUrls;
     } catch (error) {
       console.error("파일 URL 생성 중 오류 발생:", error);
-      return "";
+      return [];
     }
   };
 
@@ -64,35 +71,40 @@ export function useImageS3Upload() {
 
     try {
       const uploadPromises = imageMetadataForms.value.map(async (imageInfo) => {
-        // Presigned URL 요청
-        const urlResponse = await axios.get("/api/image/presigned-url", {
-          params: {
-            filename: imageInfo.file.name,
-            filetype: imageInfo.file.type,
-          },
-        });
+        try {
+          // Presigned URL 요청
+          const urlResponse = await axios.get("/api/image/presigned-url", {
+            params: {
+              filename: imageInfo.file.name,
+              filetype: imageInfo.file.type,
+            },
+          });
 
-        // S3에 파일 업로드
-        await fetch(urlResponse.data.presignedUrl, {
-          method: "PUT",
-          body: imageInfo.file,
-          headers: {
-            "Content-Type": imageInfo.file.type,
-          },
-        });
+          // S3에 파일 업로드
+          await fetch(urlResponse.data.presignedUrl, {
+            method: "PUT",
+            body: imageInfo.file,
+            headers: {
+              "Content-Type": imageInfo.file.type,
+            },
+          });
 
-        // S3 URL 저장
-        const s3Url = urlResponse.data.imageUrl;
-        imageInfo.imageUrl = s3Url;
+          // S3 URL 저장
+          const s3Url = urlResponse.data.imageUrl;
+          imageInfo.imageUrl = s3Url;
 
-        if (isRegister) {
-          imageMetadataForms.value[0].imageUrl = urlResponse.data.imageUrl;
+          if (isRegister) {
+            imageMetadataForms.value[0].imageUrl = urlResponse.data.imageUrl;
+          }
+
+          // 임시 URL -> S3 URL 매핑 저장
+          urlMappings.value.set(imageInfo.previewUrl, s3Url);
+
+          return imageInfo;
+        } catch (error) {
+          console.error(`이미지 업로드 실패 - ${imageInfo.file.name}:`, error);
+          throw error; // 개별 파일 업로드 실패를 상위로 전파
         }
-
-        // 임시 URL -> S3 URL 매핑 저장
-        urlMappings.value.set(imageInfo.previewUrl, s3Url);
-
-        return imageInfo;
       });
 
       await Promise.all(uploadPromises);

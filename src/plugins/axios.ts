@@ -28,11 +28,12 @@ const refreshAccessToken = async () => {
     return accessToken;
   } catch (error) {
     console.log(error);
+    throw error;
   }
 };
 // 토큰 갱신 상태 관리
 let isRefreshing = false;
-let failedRequests = [];
+let failedRequests: Array<{ resolve: Function; reject: Function }> = [];
 
 // 회원일경우에만 인터셉터 발동
 if (loginCheck) {
@@ -79,56 +80,86 @@ if (loginCheck) {
     },
     async (error) => {
       const originalRequest = error.config;
-      console.log("originalRequest 발동");
 
       // 로그인 요청은 무시
-      if (originalRequest.url.includes("/api/login/jwt")) {
+      if (originalRequest.url?.includes("/api/login/jwt")) {
         return Promise.reject(error);
       }
-      console.log("originalRequest 발동2");
+
       // 토큰 갱신 요청에서 401 에러가 발생했다면 바로 로그아웃
       if (
-        originalRequest.url.includes("/api/refresh-token") &&
+        originalRequest.url?.includes("/api/refresh-token") &&
         error.response?.status === 401
       ) {
-        console.log("originalRequest 발동3");
+        console.log("Refresh token expired, logging out");
         if (!isRefreshing) {
           isRefreshing = true;
           const loginStore = useLoginStore();
           loginStore.logout();
           alert("토큰이 만료되었습니다. 다시 로그인해주세요.");
           window.location.href = "/login";
-          return Promise.reject(error);
         }
+        return Promise.reject(error);
       }
-      console.log("originalRequest 발동3.5");
 
       // 401 Unauthorized 응답 처리 (토큰 만료 시)
       if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
-
-        // 토큰 갱신 중이 아닐 때만 갱신 시도
-        if (!isRefreshing) {
-          isRefreshing = true;
-
-          try {
-            const newAccessToken = await refreshAccessToken();
-            console.log("액세스토큰 갱신 신청");
-            // 갱신 성공 - 대기 중인 요청들 처리
-            originalRequest.headers[
-              "Authorization"
-            ] = `Bearer ${newAccessToken}`;
-            isRefreshing = false;
-            return axios(originalRequest);
-          } catch (refreshError) {
-            isRefreshing = false;
-            return Promise.reject(refreshError);
-          }
-        } else {
-          // 이미 갱신 중이면 원래 요청을 큐에 추가
+        // 이미 토큰 갱신 중이면 큐에 추가하고 대기
+        if (isRefreshing) {
+          console.log("Adding request to queue while refreshing");
           return new Promise((resolve, reject) => {
-            failedRequests.push({ resolve, reject });
+            failedRequests.push({
+              resolve: (newToken: string) => {
+                console.log("Retrying queued request with new token");
+                originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+                resolve(axios(originalRequest));
+              },
+              reject: (err: any) => {
+                reject(err);
+              },
+            });
           });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        console.log("Starting token refresh for request:", originalRequest.url);
+
+        try {
+          const newAccessToken = await refreshAccessToken();
+          console.log("Token refresh successful, processing queue");
+
+          // 대기 중인 요청들을 새 토큰으로 재시도
+          const retryPromises = failedRequests.map(({ resolve }) => {
+            console.log("Processing queued request");
+            resolve(newAccessToken);
+          });
+
+          failedRequests = [];
+          isRefreshing = false;
+
+          // 현재 요청도 새 토큰으로 재시도
+          originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+          console.log("Retrying original request with new token");
+          return axios(originalRequest);
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+          isRefreshing = false;
+
+          // 대기 중인 요청들 모두 실패 처리
+          failedRequests.forEach(({ reject }) => {
+            reject(refreshError);
+          });
+          failedRequests = [];
+
+          // 로그아웃 처리
+          const loginStore = useLoginStore();
+          loginStore.logout();
+          alert("토큰이 만료되었습니다. 다시 로그인해주세요.");
+          window.location.href = "/login";
+
+          return Promise.reject(refreshError);
         }
       }
 

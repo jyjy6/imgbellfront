@@ -10,6 +10,8 @@
           multiple
           prepend-icon="mdi-camera"
           @change="handleFileSelect"
+          chips
+          show-size
         ></v-file-input>
       </v-col>
 
@@ -168,6 +170,7 @@ import { onMounted } from "vue";
 import { useImageS3Upload } from "../composables/useImageS3Upload";
 import type { ImageMetadata } from "../types/ImageTypes";
 import type { TagType } from "../types/TagTypes";
+import { useRouter } from "vue-router";
 
 // 로그인 스토어 초기화
 const loginStore = useLoginStore();
@@ -236,15 +239,20 @@ onMounted(() => {
   imageMetadataForms.value = [];
 });
 
+const router = useRouter();
 // 이미지 업로드 함수
 const uploadImage = async () => {
+  isUploading.value = true;
   try {
     await uploadImages();
     await saveImageMetadata();
     alert("이미지 업로드 성공!");
+    router.back();
   } catch (error) {
     console.error("이미지 업로드 실패:", error);
     alert("이미지 업로드 실패!");
+  } finally {
+    isUploading.value = false;
   }
 };
 </script>

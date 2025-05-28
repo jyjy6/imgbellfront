@@ -42,7 +42,6 @@ const writePost = () => {
   router.push({ name: "ForumPost" });
 };
 
-
 const changePage = (page: number) => {
   forumStore.fetchPosts(page);
 };
@@ -50,6 +49,23 @@ const changePage = (page: number) => {
 onMounted(() => {
   forumStore.fetchPosts(1);
   forumStore.fetchNoticeList();
+});
+
+// 검색 관련 상태ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+const searchKeyword = ref("");
+const isSearching = ref(false);
+
+// 검색 실행
+const searchPosts = () => {
+  if (searchKeyword.value.trim()) {
+    isSearching.value = true;
+    forumStore.searchPosts(searchKeyword.value);
+  }
+};
+
+// 게시글 목록 표시 로직 수정
+const displayPosts = computed(() => {
+  return isSearching.value ? forumStore.searchResults : forumStore.posts;
 });
 </script>
 
@@ -75,6 +91,31 @@ onMounted(() => {
         </v-card>
 
         <!-- 기존 검색 및 글쓰기 영역... -->
+        <v-row class="mb-4">
+          <v-col cols="12" md="8">
+            <v-text-field
+              v-model="searchKeyword"
+              label="검색어를 입력하세요"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="compact"
+              @keyup.enter="searchPosts"
+            >
+              <template v-slot:append-inner>
+                <v-btn
+                  v-if="isSearching"
+                  icon="mdi-close"
+                  variant="text"
+                  size="small"
+                  @click="
+                    isSearching = false;
+                    forumStore.clearSearch();
+                  "
+                ></v-btn>
+              </template>
+            </v-text-field>
+          </v-col>
+        </v-row>
 
         <!-- 기존 게시글 목록... -->
         <v-card elevation="2">
@@ -119,7 +160,7 @@ onMounted(() => {
                 <td class="text-center text-blue">{{ post.likeCount }}</td>
               </tr>
               <tr
-                v-for="post in forumStore.posts"
+                v-for="post in displayPosts"
                 :key="post.id"
                 class="post-row"
                 @click="viewPost(post.id)"
@@ -263,6 +304,13 @@ onMounted(() => {
       </v-col>
     </v-row>
   </v-container>
+  <!-- 로딩상태 -->
+  <v-overlay
+    :model-value="forumStore.searchLoading"
+    class="align-center justify-center"
+  >
+    <v-progress-circular indeterminate size="64"></v-progress-circular>
+  </v-overlay>
 </template>
 
 <style scoped>
@@ -329,5 +377,17 @@ onMounted(() => {
 .v-card-title {
   font-size: 1rem;
   padding: 12px 16px;
+}
+
+/* 검색 관련 스타일 추가 */
+.v-text-field {
+  position: relative;
+}
+
+.v-btn.v-btn--icon {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 </style>

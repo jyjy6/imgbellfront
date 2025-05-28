@@ -17,7 +17,7 @@ export const useImageStore = defineStore("image", () => {
   const images = ref<ImageDto[]>([]);
   const loading = ref(true);
   const page = ref(1);
-  const size = ref(6);
+  const size = ref(12);
   const totalPages = ref(0);
   const searchTag = ref("");
   const selectedGrade = ref("");
