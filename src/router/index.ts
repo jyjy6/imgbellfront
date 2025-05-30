@@ -97,6 +97,11 @@ const routes: Array<RouteRecordRaw> = [
       // ... 기타 어드민 페이지
     ],
   },
+  {
+    path: "/oauth/google-callback",
+    name: "GoogleAuthCallback",
+    component: () => import("../pages/oauth/google-callback.vue"),
+  },
 ];
 
 const router = createRouter({
