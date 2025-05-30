@@ -52,6 +52,7 @@ export const useImageStore = defineStore("image", () => {
     sortOption.value = "newest";
     searchCategory.value = "all";
     searchQuery.value = "";
+    page.value = 1;
     myImageList.value = false;
     likeImageList.value = false;
     loadImages();
@@ -265,8 +266,13 @@ export const useImageStore = defineStore("image", () => {
 
   //이미지 삭제
   const deleteImage = async () => {
+    //현재 운영자페이지에서의 삭제는 백엔드에서 처리안했음 운영자가 삭제하는건 좀..
+
     //이미지 업로더명과 로그인한유저가 다르면 X
-    if (!(selectedImage.value?.uploaderName === loginStore.user?.username)) {
+    if (
+      !(selectedImage.value?.uploaderName === loginStore.user?.username) &&
+      !loginStore.user?.roleSet.includes("ROLE_ADMIN")
+    ) {
       return;
     }
 
@@ -306,6 +312,12 @@ export const useImageStore = defineStore("image", () => {
   const togglePublic = async () => {
     if (!selectedImage.value) return;
     if (!loginStore.getUser) return;
+    if (
+      !(selectedImage.value?.uploaderName === loginStore.user?.username) &&
+      !loginStore.user?.roleSet.includes("ROLE_ADMIN")
+    ) {
+      return;
+    }
 
     try {
       const response = await axios.put(

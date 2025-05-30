@@ -14,7 +14,7 @@ export interface UserInfo {
   lastLogin?: string; // ISO 날짜 문자열
   isPremium: boolean;
   premiumExpiryDate?: string; // ISO 날짜 문자열
-  roles: string;
+  roleSet: string[];
   isSuperAdmin: boolean;
   sex: string;
   age: number;

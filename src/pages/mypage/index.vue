@@ -61,8 +61,10 @@ const avatarText = computed(() => {
 });
 
 const userRole = computed(() => {
-  if (loginStore.getUser?.isSuperAdmin) return "관리자";
-  if (loginStore.getUser?.roles) return loginStore.getUser?.roles;
+  const roles = loginStore.getUser?.roleSet || [];
+  if (roles.includes("ROLE_SUPERADMIN")) return "최고 관리자";
+  if (roles.includes("ROLE_ADMIN")) return "관리자";
+  if (roles.includes("ROLE_USER")) return "일반 회원";
   return "일반 회원";
 });
 
@@ -123,7 +125,8 @@ const loadLikeImage = async () => {
               @click="
                 tab === '내 좋아요 이미지'
                   ? loadLikeImage()
-                  : (imageStore.myImageList = true);
+                  : ((imageStore.myImageList = true),
+                    (imageStore.likeImageList = false));
                 imageStore.loadImages();
               "
             >

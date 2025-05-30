@@ -80,6 +80,23 @@ const routes: Array<RouteRecordRaw> = [
       import(/* webpackChunkName: "formedit" */ "../pages/forum/edit.vue"),
     props: true, // postId를 props로 전달
   },
+  {
+    path: "/admin",
+    component: () => import("../pages/admin/index.vue"),
+    children: [
+      {
+        path: "users",
+        name: "AdminUsers",
+        component: () => import("../pages/admin/users.vue"),
+      },
+      {
+        path: "images",
+        name: "AdminImages",
+        component: () => import("../pages/admin/images.vue"),
+      },
+      // ... 기타 어드민 페이지
+    ],
+  },
 ];
 
 const router = createRouter({

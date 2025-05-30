@@ -395,6 +395,14 @@ onMounted(() => {
       >
         포럼
       </v-btn>
+      <v-btn
+        v-if="loginStore.user && loginStore.user.roleSet.includes('ROLE_ADMIN')"
+        prepend-icon="mdi-cog"
+        class="ml-2"
+        @click="router.push('/admin')"
+      >
+        운영자페이지
+      </v-btn>
 
       <!-- User Menu -->
       <v-menu location="bottom">

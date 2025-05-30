@@ -257,10 +257,10 @@ const onFileSelect = async (event: Event) => {
   if (!file || !editor.value) return;
 
   try {
-    // 임시 URL 생성 및 에디터에 삽입
-    const tempUrl = await handleFileSelect(file);
+    // File을 File[]로 변환하여 전달
+    const tempUrls = await handleFileSelect([file]);
+    const tempUrl = tempUrls[0]; // 첫 번째 URL만 사용
 
-    // 에디터의 현재 커서 위치에 이미지 삽입
     editor.value
       .chain()
       .focus()
@@ -315,10 +315,15 @@ const savePost = async () => {
     }
     // 5. 이미지 메타데이터 저장 (필요한 경우)
     // await saveImageMetadata();
-    
+
     alert("포스트가 저장되었습니다!");
-    
-    router.push(props.redirectURL || "/forum");
+    if (props.redirectURL) {
+      console.log(props.redirectURL);
+      router.push(props.redirectURL);
+    } else {
+      console.log("redirectURL 없음");
+      router.push("/forum");
+    }
   } catch (error) {
     console.error("포스트 저장 중 오류 발생:", error);
     alert("포스트 저장 중 오류가 발생했습니다.");
