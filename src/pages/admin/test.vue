@@ -97,12 +97,17 @@ public class WebSocketConfig implements WebSocketConfigurer {
       </div>
     </div>
   </div>
+
+  <AIImageAnalysisComponent
+    imageUrl="https://juneyoung2da.s3.amazonaws.com/image/jpeg/218574dc-d1ca-433e-a407-a7e059cf1729_KakaoTalk_20250528_222209531_15.jpg"
+  />
 </template>
 
 <script setup lang="ts">
 import axios from "axios";
 import notificationSocket from "@/utils/notifySocket";
 import { ref, onMounted } from "vue";
+import AIImageAnalysisComponent from "@/components/AIImageAnalysisComponent.vue";
 
 const frontendUrl = ref("");
 const backendUrl = ref("");

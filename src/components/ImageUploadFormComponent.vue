@@ -145,6 +145,12 @@
             </v-row>
           </v-card-text>
         </v-card>
+        <AIImageAnalysisComponent
+          :imageUrl="imageInfo.previewUrl"
+          :imageFile="imageInfo.file"
+          @add-tag="(tagName) => addTagToImage(imageInfo, tagName)"
+          @set-grade="(grade) => setImageGrade(imageInfo, grade)"
+        />
       </v-col>
 
       <!-- 업로드 버튼 -->
@@ -171,6 +177,7 @@ import { useImageS3Upload } from "../composables/useImageS3Upload";
 import type { ImageMetadata } from "../types/ImageTypes";
 import type { TagType } from "../types/TagTypes";
 import { useRouter } from "vue-router";
+import AIImageAnalysisComponent from "./AIImageAnalysisComponent.vue";
 
 // 로그인 스토어 초기화
 const loginStore = useLoginStore();
@@ -240,6 +247,40 @@ onMounted(() => {
 });
 
 const router = useRouter();
+// AI 분석 결과로 태그 추가
+const addTagToImage = (imageInfo: ImageMetadata, tagName: string) => {
+  // 이미 존재하는 태그인지 확인
+  const existingTag = imageInfo.tags.find((tag) => tag.name === tagName);
+
+  if (!existingTag) {
+    // 새 태그 추가
+    const newTag: TagType = {
+      name: tagName,
+      description: `AI가 추천한 태그: ${tagName}`,
+      category: "AI추천",
+    };
+    imageInfo.tags.push(newTag);
+    console.log(`태그 "${tagName}" 추가됨`, imageInfo.tags);
+  } else {
+    console.log(`태그 "${tagName}"는 이미 존재함`);
+  }
+};
+
+// AI 분석 결과로 등급 설정
+const setImageGrade = (imageInfo: ImageMetadata, grade: string) => {
+  // AI 등급을 시스템 등급으로 매핑
+  const gradeMapping: Record<string, string> = {
+    S: "GENERAL",
+    A: "GENERAL",
+    B: "GENERAL",
+    C: "ADULT",
+    D: "EXTREME",
+  };
+
+  imageInfo.imageGrade = gradeMapping[grade] || "GENERAL";
+  console.log(`등급 "${grade}" → "${imageInfo.imageGrade}" 설정됨`);
+};
+
 // 이미지 업로드 함수
 const uploadImage = async () => {
   isUploading.value = true;
