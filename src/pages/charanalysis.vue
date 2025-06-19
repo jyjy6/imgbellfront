@@ -271,7 +271,7 @@ interface ImageCharAnalysisResult {
 
 // 반응형 상태
 const activeTab = ref("file");
-const selectedFile = ref<File[]>([]);
+const selectedFile = ref<File | null>(null);
 const imageUrl = ref("");
 const isAnalyzing = ref(false);
 const analysisResult = ref<ImageCharAnalysisResult | null>(null);
@@ -280,8 +280,8 @@ const errorMessage = ref("");
 
 // 계산된 속성
 const filePreviewUrl = computed(() => {
-  if (selectedFile.value && selectedFile.value.length > 0) {
-    return URL.createObjectURL(selectedFile.value[0]);
+  if (selectedFile.value && selectedFile.value instanceof File) {
+    return URL.createObjectURL(selectedFile.value);
   }
   return null;
 });
@@ -299,8 +299,9 @@ const filePreviewUrl = computed(() => {
 // };
 
 const onFileSelected = () => {
+  console.log("onFileSelected 호출됨:", selectedFile.value);
   // 파일이 선택되면 URL 탭의 내용 초기화
-  if (selectedFile.value && selectedFile.value.length > 0) {
+  if (selectedFile.value && selectedFile.value instanceof File) {
     imageUrl.value = "";
     analysisResult.value = null;
   }
@@ -316,12 +317,21 @@ const showErrorMessage = (message: string) => {
 };
 
 const analyzeFile = async () => {
-  if (!selectedFile.value || selectedFile.value.length === 0) {
+  console.log("selectedFile.value:", selectedFile.value);
+  console.log("selectedFile.value type:", typeof selectedFile.value);
+  console.log("파일이 File 인스턴스인가?:", selectedFile.value instanceof File);
+
+  // 단일 파일 존재 확인
+  if (!selectedFile.value || !(selectedFile.value instanceof File)) {
     showErrorMessage("파일을 선택해주세요.");
     return;
   }
 
-  const file = selectedFile.value[0];
+  const file = selectedFile.value;
+
+  console.log("추출된 파일:", file);
+  console.log("파일 이름:", file.name);
+  console.log("파일 크기:", file.size);
 
   // 파일 크기 체크 (10MB 제한)
   if (file.size > 10 * 1024 * 1024) {
@@ -420,13 +430,18 @@ const analyzeUrl = async () => {
 
 const resetAnalysis = () => {
   analysisResult.value = null;
-  selectedFile.value = [];
+  selectedFile.value = null;
   imageUrl.value = "";
   activeTab.value = "file";
 };
 
+watch(selectedFile, (newVal) => {
+  console.log(newVal);
+});
+
 // 컴포넌트 언마운트 시 Object URL 정리
 import { onUnmounted } from "vue";
+import { watch } from "vue";
 onUnmounted(() => {
   if (filePreviewUrl.value) {
     URL.revokeObjectURL(filePreviewUrl.value);
