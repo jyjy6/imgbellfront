@@ -474,6 +474,13 @@ onUnmounted(() => {
         포럼
       </v-btn>
       <v-btn
+        prepend-icon="mdi-robot-happy"
+        class="ml-2"
+        @click="router.push('/charanalysis')"
+      >
+        검은수염 분석
+      </v-btn>
+      <v-btn
         v-if="
           loginStore.user &&
           loginStore.user.roleSet &&
@@ -575,6 +582,12 @@ onUnmounted(() => {
           prepend-icon="mdi-cog"
           title="랭킹"
           to="/ranking"
+        ></v-list-item>
+
+        <v-list-item
+          prepend-icon="mdi-robot-happy"
+          title="검은수염 분석"
+          to="/charanalysis"
         ></v-list-item>
 
         <v-list-item

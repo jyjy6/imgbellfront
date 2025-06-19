@@ -66,6 +66,40 @@ export const useLoginStore = defineStore("login", () => {
     }
   };
 
+  const handleGuestLogin = async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/login/guest`
+      );
+      const accessToken = response.data.accessToken;
+
+      localStorage.setItem("accessToken", accessToken);
+
+      // ✅ 별도 API로 유저 정보 가져오기 login
+      const userResponse = await axios.get("/api/members/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      user.value = userResponse.data;
+      localStorage.setItem("user", JSON.stringify(user.value));
+      isLogin.value = true;
+
+      alert("게스트 로그인 성공!");
+      router.go(-1);
+
+      return;
+    } catch (error: any) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        alert(error.response.data.message);
+      } else {
+        alert("로그인 중 오류가 발생했습니다.");
+      }
+    }
+  };
+
   const logout = async () => {
     try {
       // 1. 쿠키 삭제 (HTTP Only 쿠키는 서버 도움 필요->refreshToken은 서버에서 처리하나, 여기선 학습용으로 명시적으로써놓음)
@@ -104,5 +138,6 @@ export const useLoginStore = defineStore("login", () => {
     login,
     logout,
     loadUserFromLocalStorage,
+    handleGuestLogin,
   };
 });

@@ -29,6 +29,13 @@
       <v-btn @click="handleKakaoLogin" class="kakao-login-btn mb-3">
         카카오로 로그인
       </v-btn>
+      <v-btn
+        @click="loginStore.handleGuestLogin"
+        class="mb-3 w-100"
+        color="warning"
+      >
+        게스트 로그인
+      </v-btn>
 
       <v-btn block color="secondary" variant="text" @click="navigateToRegister">
         계정이 없으신가요? 회원가입
