@@ -34,6 +34,13 @@ const routes: Array<RouteRecordRaw> = [
     props: true, // imageId를 props로 전달
   },
   {
+    path: "/image/test",
+    name: "ImageTest",
+    component: () =>
+      import(/* webpackChunkName: "imagetest" */ "../pages/image/test.vue"),
+    props: true, // imageId를 props로 전달
+  },
+  {
     path: "/mypage",
     name: "MyPage",
     component: () =>
