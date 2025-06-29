@@ -157,6 +157,7 @@ export const useImageStore = defineStore("image", () => {
     try {
       // 로컬스토리지 기반으로 조회 기록 초기화
       initImageViewHistory();
+      console.log("모달켜짐");
 
       // 조회수 증가 여부를 파라미터로 전달
       const params: any = {};

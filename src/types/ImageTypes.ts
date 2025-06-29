@@ -25,8 +25,54 @@ export interface ImageDto {
   uploaderName: string;
   likeCount: number;
   viewCount: number;
+  downloadCount?: number;
   imageGrade: string;
   isPublic: boolean;
+}
+
+// ElasticSearch 문서 타입
+export interface ElasticImageDto {
+  id: string;
+
+  // 기본 이미지 정보
+  imageName: string;
+  imageUrl: string;
+  fileType: string;
+
+  // 업로더 정보
+  uploaderId: number;
+  uploaderName: string;
+
+  // 출처 정보
+  source?: string;
+  artist?: string;
+
+  // 통계 정보
+  viewCount: number;
+  likeCount: number;
+
+  // 등급 및 공개 설정
+  imageGrade: string;
+  isPublic: boolean;
+
+  // 타임스탬프
+  createdAt: string; // ISO 8601 형식
+  updatedAt: string; // ISO 8601 형식
+
+  // 태그 정보
+  tags: TagDocument[];
+  tagNames: string[];
+
+  // 검색 최적화 필드
+  searchText: string;
+  popularityScore: number;
+}
+
+// ElasticSearch 태그 문서 타입
+export interface TagDocument {
+  id: number;
+  name: string;
+  category: string;
 }
 
 export interface ImageDetailDto {

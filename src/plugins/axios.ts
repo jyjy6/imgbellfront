@@ -47,7 +47,7 @@ if (loginCheck) {
         if (!isRefreshing) {
           isRefreshing = true;
           const loginStore = useLoginStore();
-          loginStore.logout();
+          await loginStore.logout();
           alert("토큰이 만료되었습니다. 다시 로그인해주세요.");
           window.location.href = "/login";
           return Promise.reject(new Error("로그인하셈"));
@@ -89,7 +89,7 @@ if (loginCheck) {
         if (!isRefreshing) {
           isRefreshing = true;
           const loginStore = useLoginStore();
-          loginStore.logout();
+          await loginStore.logout();
           alert("토큰이 만료되었습니다. 다시 로그인해주세요.");
           window.location.href = "/login";
         }

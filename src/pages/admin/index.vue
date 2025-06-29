@@ -32,6 +32,7 @@ const adminMenuItems = ref([
   { title: "이미지 관리", icon: "mdi-image-multiple", path: "/admin/images" },
   { title: "테스트", icon: "mdi-test-tube", path: "/admin/test" },
   { title: "레디스", icon: "mdi-database", path: "/redis" },
+  { title: "이미지 검색", icon: "mdi-image-search", path: "/image/test" },
 ]);
 
 onMounted(async () => {
