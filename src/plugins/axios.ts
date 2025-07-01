@@ -124,7 +124,7 @@ if (loginCheck) {
           const newAccessToken = await refreshAccessToken();
 
           // 대기 중인 요청들을 새 토큰으로 재시도
-          const retryPromises = failedRequests.map(({ resolve }) => {
+          failedRequests.map(({ resolve }) => {
             resolve(newAccessToken);
           });
 
