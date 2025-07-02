@@ -12,7 +12,7 @@ const imageStore = useImageStore();
 onMounted(() => {
   imageStore.loadImages();
 
-  alert("깃액션 동작 확인되었습니당123123123");
+  alert("깃액션 동작 확인되었습니당123123");
 });
 </script>
 
