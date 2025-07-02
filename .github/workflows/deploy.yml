@@ -2,7 +2,7 @@ name: Frontend Deploy to EC2
 
 on:
   push:
-    branches: [main, master]
+    branches: main
 
 jobs:
   deploy:
@@ -15,11 +15,12 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
+          command_timeout: 15m
           script: |
             cd /home/ubuntu/ImgBellProject/imgbellfront
 
             # Git 업데이트
-            git pull origin main || git pull origin master
+            git pull origin main
 
             # 프론트엔드 서비스 재시작
             cd /home/ubuntu/ImgBellProject
@@ -27,6 +28,3 @@ jobs:
             sudo docker-compose rm -f frontend
             sudo docker-compose build frontend
             sudo docker-compose up -d frontend
-
-            # 불필요한 이미지 정리
-            sudo docker system prune -f
