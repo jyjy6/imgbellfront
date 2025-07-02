@@ -1,15 +1,10 @@
 # ImgBellFront/Dockerfile
-# 빌드 스테이지
-FROM node:18-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# 프로덕션 스테이지
+# 이미 빌드된 파일을 사용하는 프로덕션 이미지
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+
+# 이미 빌드된 dist 폴더 복사
+COPY dist/ /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
