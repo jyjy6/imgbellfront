@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useLoginStore } from "../stores/loginStore";
+import { logError } from "@/utils/errorHandler";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || "";
 const withCredentials = true;
@@ -73,6 +74,9 @@ if (loginCheck) {
       return response;
     },
     async (error) => {
+      // 🆕 커스텀 에러 로깅 추가
+      logError("API 요청", error);
+
       const originalRequest = error.config;
 
       // 로그인 요청은 무시

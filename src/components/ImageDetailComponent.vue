@@ -7,6 +7,10 @@ const loginStore = useLoginStore();
 const router = useRouter();
 
 const editImage = () => {
+  if (imageStore.selectedImage?.uploaderName !== loginStore.user?.username) {
+    alert("이미지 수정 권한이 없습니다.");
+    return;
+  }
   router.push({
     name: "ImageEdit",
     params: { imageId: imageStore.selectedImage?.id },

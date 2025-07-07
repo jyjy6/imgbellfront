@@ -11,8 +11,6 @@ const imageStore = useImageStore();
 // 컴포넌트 마운트 시 이미지 로드
 onMounted(() => {
   imageStore.loadImages();
-
-  alert("깃액션 동작 확인되었습니당dddddddㅇㅇㅇㅇㅇㅇ");
 });
 </script>
 

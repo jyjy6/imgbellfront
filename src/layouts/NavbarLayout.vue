@@ -281,6 +281,7 @@ watch(
 onMounted(() => {
   loadPopularTags();
 
+  console.log(import.meta.env.VITE_API_BASE_URL);
   // 이미 로그인되어 있다면 웹소켓 연결
   if (loginStore.user && loginStore.user.id) {
     notificationSocket.connectWithUser(

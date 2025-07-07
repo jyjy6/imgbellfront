@@ -276,9 +276,15 @@ const checkUsernameDuplicate = async () => {
     } else {
       usernameError.value = "이미 사용 중인 아이디입니다";
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("아이디 중복 확인 실패:", error);
-    usernameError.value = "중복 확인 중 오류가 발생했습니다";
+
+    // 🆕 백엔드 커스텀 에러 정보 처리
+    if (error.response?.data?.errorCode) {
+      usernameError.value = `${error.response.data.errorCode}: ${error.response.data.message}`;
+    } else {
+      usernameError.value = "중복 확인 중 오류가 발생했습니다";
+    }
   } finally {
     checkingUsername.value = false;
   }
@@ -307,9 +313,15 @@ const checkNameDuplicate = async () => {
       console.log(response.data);
       nameError.value = "이미 사용 중인 닉네임입니다";
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("닉네임 중복 확인 실패:", error);
-    nameError.value = "중복 확인 중 오류가 발생했습니다";
+
+    // 🆕 백엔드 커스텀 에러 정보 처리
+    if (error.response?.data?.errorCode) {
+      nameError.value = `${error.response.data.errorCode}: ${error.response.data.message}`;
+    } else {
+      nameError.value = "중복 확인 중 오류가 발생했습니다";
+    }
   } finally {
     checkingName.value = false;
   }
@@ -359,9 +371,17 @@ const submitForm = async () => {
       loginStore.loadUserFromLocalStorage();
       alert("회원수정이 완료되었습니다!");
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error("회원수정 실패:", error);
-      alert("회원수정에 실패했습니다.");
+
+      // 🆕 백엔드 커스텀 에러 정보 표시
+      if (error.response?.data?.errorCode) {
+        alert(
+          `에러: ${error.response.data.errorCode}\n메시지: ${error.response.data.message}`
+        );
+      } else {
+        alert("회원수정에 실패했습니다.");
+      }
     }
   } else {
     try {
@@ -374,9 +394,17 @@ const submitForm = async () => {
       console.log(form.value.profileImage);
       alert("회원가입이 완료되었습니다!");
       router.push("/login");
-    } catch (error) {
+    } catch (error: any) {
       console.error("회원가입 실패:", error);
-      alert("회원가입에 실패했습니다.");
+
+      // 🆕 백엔드 커스텀 에러 정보 표시
+      if (error.response?.data?.errorCode) {
+        alert(
+          `에러: ${error.response.data.errorCode}\n메시지: ${error.response.data.message}`
+        );
+      } else {
+        alert("회원가입에 실패했습니다.");
+      }
     }
   }
 };

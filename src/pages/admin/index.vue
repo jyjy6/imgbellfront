@@ -36,12 +36,59 @@ const adminMenuItems = ref([
 ]);
 
 onMounted(async () => {
-  // 실제 API로 교체
-  const res = await axios.get("/api/admin/dashboard");
-  stats.value = res.data.stats;
-  recentUsers.value = res.data.recentUsers;
-  recentImages.value = res.data.recentImages;
-  recentPosts.value = res.data.recentPosts;
+  try {
+    console.log("관리자 대시보드 데이터 로딩 시작...");
+    const res = await axios.get("/api/admin/dashboard");
+
+    console.log("API 응답:", res.data);
+
+    // 🛡️ 백엔드 응답 구조에 맞게 수정: res.data.data에 실제 데이터가 있음
+    const responseData = res.data.data || res.data; // data.data 또는 data에 접근
+
+    if (responseData && responseData.stats) {
+      stats.value = {
+        userCount: responseData.stats.userCount || 0,
+        imageCount: responseData.stats.imageCount || 0,
+        todayVisit: responseData.stats.todayVisit || 0,
+        reportCount: responseData.stats.reportCount || 0,
+      };
+      console.log("통계 데이터 로딩 완료:", stats.value);
+    } else {
+      console.warn("stats 데이터가 없습니다. 응답 구조:", responseData);
+    }
+
+    recentUsers.value = responseData?.recentUsers || [];
+    recentImages.value = responseData?.recentImages || [];
+    recentPosts.value = responseData?.recentPosts || [];
+
+    console.log("대시보드 데이터 로딩 완료");
+  } catch (error: any) {
+    console.error("🚨 관리자 대시보드 데이터 로딩 실패:");
+    console.error("에러:", error);
+    console.error("응답 데이터:", error.response?.data);
+
+    // 권한 에러 처리
+    if (error.response?.status === 403) {
+      alert("관리자 권한이 필요합니다.");
+      // 메인 페이지로 리다이렉트
+      window.location.href = "/";
+      return;
+    }
+
+    // 인증 에러 처리
+    if (error.response?.status === 401) {
+      alert("로그인이 필요합니다.");
+      window.location.href = "/login";
+      return;
+    }
+
+    // 기타 에러
+    alert(
+      `관리자 대시보드 데이터 로딩 실패: ${
+        error.response?.data?.message || error.message || "알 수 없는 오류"
+      }`
+    );
+  }
 });
 
 const imageStore = useImageStore();

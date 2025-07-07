@@ -5,6 +5,7 @@ import { useForumStore } from "../../stores/forumStore";
 import type { ForumComment } from "../../types/ForumTypes";
 import { useLoginStore } from "../../stores/loginStore";
 import { onUnmounted } from "vue";
+import { handleApiError, logError } from "../../utils/errorHandler";
 const route = useRoute();
 const router = useRouter();
 
@@ -72,8 +73,11 @@ const addComment = async () => {
     );
     newComment.value = "";
     replyTo.value = null;
-  } catch (error) {
-    console.error("댓글 작성 실패:", error);
+  } catch (error: any) {
+    // 🆕 유틸리티 함수 사용 (import 필요: import { handleApiError, logError } from '@/utils/errorHandler')
+    logError("댓글 작성", error);
+    const errorMessage = handleApiError(error);
+    alert(errorMessage);
   }
 };
 const replyComment = (commentId: number) => {
