@@ -25,6 +25,7 @@ onMounted(() => {
   forumStore.forumViewCount(Number(postId.value));
   forumStore.fetchComments(Number(postId.value));
   forumStore.fetchUserLikes();
+  console.log(forumStore.isLiked);
 });
 
 onUnmounted(() => {

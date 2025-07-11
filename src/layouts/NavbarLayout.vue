@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useLoginStore } from "../stores/loginStore";
 import { useImageStore } from "../stores/imageStore";
+import { useDisplay, useTheme } from "vuetify";
 import type { TagType } from "../types/TagTypes";
 import notificationSocket from "../utils/notifySocket";
 
 const router = useRouter();
 const loginStore = useLoginStore();
 const imageStore = useImageStore();
+const { mobile } = useDisplay();
+const theme = useTheme();
 
 // 상태 변수
 const drawer = ref(false);
 const showSearchOptions = ref(false);
+const showUserMenu = ref(false);
+
+// 테마 토글 기능
+const isDark = computed(() => theme.current.value.dark);
+
+const toggleTheme = () => {
+  theme.global.name.value = isDark.value ? "customLight" : "customDark";
+};
 
 // 알림 관련 상태
 const showNotificationSnackbar = ref(false);
@@ -313,6 +324,15 @@ onUnmounted(() => {
       </v-app-bar-title>
 
       <v-spacer></v-spacer>
+
+      <!-- 테마 토글 버튼 -->
+      <v-btn
+        :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+        @click="toggleTheme"
+        :title="isDark ? '라이트 모드로 변경' : '다크 모드로 변경'"
+        class="mx-1"
+      >
+      </v-btn>
 
       <!-- 검색 아이콘 버튼 -->
       <v-btn icon @click="showSearchModal = true" class="mx-2">

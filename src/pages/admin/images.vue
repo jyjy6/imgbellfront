@@ -32,20 +32,6 @@ watch(
   }
 );
 
-// 검색 키워드 변경 시 자동완성 실행
-watch(
-  () => elasticSearchStore.searchKeyword,
-  (newKeyword) => {
-    if (newKeyword && newKeyword.trim()) {
-      // autocompleteQuery를 searchKeyword와 동기화
-      elasticSearchStore.autocompleteQuery = newKeyword;
-      elasticSearchStore.testAutocomplete();
-    } else {
-      // 키워드가 없으면 자동완성 결과 초기화
-      elasticSearchStore.autocompleteSuggestions = [];
-    }
-  }
-);
 
 onMounted(() => {
   elasticSearchStore.getPopularImages(); // 초기 로드는 인기 이미지

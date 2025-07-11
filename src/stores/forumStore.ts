@@ -18,6 +18,13 @@ export const useForumStore = defineStore("forum", () => {
   const loginStore = useLoginStore();
   const userLikeList = ref<Forum[]>([]);
 
+  // 랭킹 관련 상태 추가
+  const dailyRankingIds = ref<number[]>([]);
+  const weeklyRankingIds = ref<number[]>([]);
+  const dailyRankingForums = ref<Forum[]>([]);
+  const weeklyRankingForums = ref<Forum[]>([]);
+  const rankingLoading = ref(false);
+
   const fetchNoticeList = async () => {
     try {
       const response = await axios.get(
@@ -70,6 +77,11 @@ export const useForumStore = defineStore("forum", () => {
         `${import.meta.env.VITE_API_BASE_URL}/api/forum/${postId}`
       );
       singlePost.value = response.data;
+
+      // 게시글 로드 후 좋아요 상태 확인
+      if (loginStore.user) {
+        await fetchUserLikes();
+      }
     } catch (err) {
       console.error("게시글 조회 실패:", err);
       error.value = "게시글을 불러오는데 실패했습니다.";
@@ -99,8 +111,11 @@ export const useForumStore = defineStore("forum", () => {
   const forumViewCount = async (postId: number) => {
     // 이미 조회한 게시글이면 카운트하지 않음
     if (viewedPosts.value.has(postId)) {
+      console.log("이미 조회한 게시글");
       return;
     }
+
+    console.log("조회수 증가 시도");
 
     try {
       const response = await axios.put(
@@ -242,14 +257,18 @@ export const useForumStore = defineStore("forum", () => {
 
   // isLiked 상태를 초기화하는 함수
   const updateLikedStatus = () => {
-    if (
-      !singlePost.value ||
-      !userLikeList.value ||
-      userLikeList.value.length === 0
-    ) {
+    if (!singlePost.value || !loginStore.user) {
       isLiked.value = false;
       return;
     }
+
+    if (!userLikeList.value || userLikeList.value.length === 0) {
+      isLiked.value = false;
+      return;
+    }
+    console.log("updateLikedStatus");
+    console.log(singlePost.value);
+    console.log(userLikeList.value);
 
     isLiked.value = userLikeList.value.some(
       (forum) => forum.id === singlePost.value?.id
@@ -258,8 +277,8 @@ export const useForumStore = defineStore("forum", () => {
 
   const fetchUserLikes = async () => {
     loading.value = true;
-    if (singlePost.value) return;
-    if (!loginStore.getUser) {
+    if (!singlePost.value) return; // 게시글이 없으면 종료
+    if (!loginStore.user) {
       return;
     }
 
@@ -274,6 +293,7 @@ export const useForumStore = defineStore("forum", () => {
       error.value = "좋아요 목록을 불러오는데 실패했습니다.";
     } finally {
       loading.value = false;
+      console.log(isLiked.value);
     }
   };
 
@@ -347,6 +367,84 @@ export const useForumStore = defineStore("forum", () => {
     fetchPosts(1); // 일반 게시글 목록으로 복귀
   };
 
+  // 포럼 랭킹 관련 함수들 ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+  // 포럼 랭킹 데이터 로드
+  const loadForumRanking = async (
+    period: "daily" | "weekly",
+    limit: number = 5
+  ) => {
+    rankingLoading.value = true;
+    try {
+      // 1. 랭킹 포럼 ID 가져오기
+      const response = await axios.get<number[]>(
+        `${import.meta.env.VITE_API_BASE_URL}/api/forum/ranking`,
+        {
+          params: {
+            period,
+            limit,
+          },
+        }
+      );
+
+      const rankingIds = response.data;
+
+      // 2. 각 포럼 ID로 상세 정보 가져오기
+      if (rankingIds.length > 0) {
+        const forumPromises = rankingIds.map((id) =>
+          axios
+            .get<Forum>(`${import.meta.env.VITE_API_BASE_URL}/api/forum/${id}`)
+            .then((res) => res.data)
+            .catch(() => null)
+        );
+
+        const forums = await Promise.all(forumPromises);
+        const validForums = forums.filter((forum): forum is Forum => !!forum);
+
+        // 기간에 따라 저장
+        if (period === "daily") {
+          dailyRankingIds.value = rankingIds;
+          dailyRankingForums.value = validForums;
+        } else {
+          weeklyRankingIds.value = rankingIds;
+          weeklyRankingForums.value = validForums;
+        }
+      } else {
+        // 랭킹 데이터가 없을 경우 초기화
+        if (period === "daily") {
+          dailyRankingIds.value = [];
+          dailyRankingForums.value = [];
+        } else {
+          weeklyRankingIds.value = [];
+          weeklyRankingForums.value = [];
+        }
+      }
+    } catch (error) {
+      console.error(`${period} 포럼 랭킹 로드 실패:`, error);
+      // 에러 발생 시 초기화
+      if (period === "daily") {
+        dailyRankingIds.value = [];
+        dailyRankingForums.value = [];
+      } else {
+        weeklyRankingIds.value = [];
+        weeklyRankingForums.value = [];
+      }
+    } finally {
+      rankingLoading.value = false;
+    }
+  };
+
+  // 일간 랭킹 로드
+  const loadDailyRanking = () => loadForumRanking("daily");
+
+  // 주간 랭킹 로드
+  const loadWeeklyRanking = () => loadForumRanking("weekly");
+
+  // 모든 랭킹 로드
+  const loadAllRankings = async () => {
+    await Promise.all([loadDailyRanking(), loadWeeklyRanking()]);
+  };
+
   return {
     //상태
     posts,
@@ -362,6 +460,12 @@ export const useForumStore = defineStore("forum", () => {
     searchResults,
     searchLoading,
     searchKeyword,
+    // 랭킹 관련 상태
+    dailyRankingIds,
+    weeklyRankingIds,
+    dailyRankingForums,
+    weeklyRankingForums,
+    rankingLoading,
 
     //메소드
     fetchPosts,
@@ -377,5 +481,10 @@ export const useForumStore = defineStore("forum", () => {
     toggleLike,
     searchPosts,
     clearSearch,
+    // 랭킹 관련 메소드
+    loadForumRanking,
+    loadDailyRanking,
+    loadWeeklyRanking,
+    loadAllRankings,
   };
 });

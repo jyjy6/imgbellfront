@@ -49,6 +49,7 @@ const changePage = (page: number) => {
 onMounted(() => {
   forumStore.fetchPosts(1);
   forumStore.fetchNoticeList();
+  forumStore.loadAllRankings(); // 랭킹 데이터 로드
 });
 
 // 검색 관련 상태ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
@@ -67,6 +68,13 @@ const searchPosts = () => {
 const displayPosts = computed(() => {
   return isSearching.value ? forumStore.searchResults : forumStore.posts;
 });
+
+// 제목 길이 제한 함수
+const truncateTitle = (title: string, maxLength: number = 25) => {
+  return title.length > maxLength
+    ? title.substring(0, maxLength) + "..."
+    : title;
+};
 </script>
 
 <template>
@@ -234,43 +242,145 @@ const displayPosts = computed(() => {
           </v-card-text>
         </v-card>
 
-        <!-- 인기 게시물 -->
+        <!-- 일간 인기 게시물 -->
         <v-card class="mb-4" elevation="2">
-          <v-card-title class="bg-primary text-white">
-            <v-icon class="mr-2">mdi-fire</v-icon>
-            인기 게시물
+          <v-card-title
+            class="bg-primary text-white d-flex justify-space-between align-center"
+          >
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-fire</v-icon>
+              일간 인기 게시물
+            </div>
+            <v-btn
+              icon
+              size="small"
+              variant="text"
+              @click="forumStore.loadDailyRanking"
+              :loading="forumStore.rankingLoading"
+            >
+              <v-icon>mdi-refresh</v-icon>
+            </v-btn>
           </v-card-title>
           <v-list>
-            <v-list-item v-for="i in 5" :key="i" class="popular-post">
-              <template v-slot:prepend>
-                <v-avatar color="grey-lighten-1" size="24">
-                  <span class="text-caption">{{ i }}</span>
-                </v-avatar>
-              </template>
-              <v-list-item-title class="text-body-2">
-                인기 게시물 제목 {{ i }}
-              </v-list-item-title>
-            </v-list-item>
+            <template v-if="forumStore.rankingLoading">
+              <v-list-item>
+                <v-skeleton-loader type="list-item-avatar"></v-skeleton-loader>
+              </v-list-item>
+            </template>
+            <template v-else-if="forumStore.dailyRankingForums.length > 0">
+              <v-list-item
+                v-for="(forum, index) in forumStore.dailyRankingForums"
+                :key="forum.id"
+                class="popular-post"
+                @click="viewPost(forum.id)"
+              >
+                <template v-slot:prepend>
+                  <v-avatar
+                    :color="
+                      index === 0
+                        ? 'amber'
+                        : index === 1
+                        ? 'grey-lighten-1'
+                        : index === 2
+                        ? 'orange'
+                        : 'primary'
+                    "
+                    size="24"
+                  >
+                    <span class="text-caption">{{ index + 1 }}</span>
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="text-body-2">
+                  {{ truncateTitle(forum.title) }}
+                </v-list-item-title>
+                <template v-slot:append>
+                  <div class="text-caption text-grey d-flex align-center">
+                    <v-icon size="12" class="mr-1">mdi-eye</v-icon>
+                    {{ forum.viewCount }}
+                    <v-icon size="12" class="ml-2 mr-1">mdi-heart</v-icon>
+                    {{ forum.likeCount }}
+                  </div>
+                </template>
+              </v-list-item>
+            </template>
+            <template v-else>
+              <v-list-item>
+                <v-list-item-title class="text-body-2 text-grey">
+                  아직 랭킹 데이터가 없습니다.
+                </v-list-item-title>
+              </v-list-item>
+            </template>
           </v-list>
         </v-card>
 
-        <!-- 최근 게시물 -->
+        <!-- 주간 인기 게시물 -->
         <v-card class="mb-4" elevation="2">
-          <v-card-title class="bg-primary text-white">
-            <v-icon class="mr-2">mdi-clock-outline</v-icon>
-            최근 게시물
+          <v-card-title
+            class="bg-primary text-white d-flex justify-space-between align-center"
+          >
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-clock-outline</v-icon>
+              주간 인기 게시물
+            </div>
+            <v-btn
+              icon
+              size="small"
+              variant="text"
+              @click="forumStore.loadWeeklyRanking"
+              :loading="forumStore.rankingLoading"
+            >
+              <v-icon>mdi-refresh</v-icon>
+            </v-btn>
           </v-card-title>
           <v-list>
-            <v-list-item v-for="i in 5" :key="i" class="recent-post">
-              <template v-slot:prepend>
-                <v-avatar color="grey-lighten-1" size="24">
-                  <span class="text-caption">{{ i }}</span>
-                </v-avatar>
-              </template>
-              <v-list-item-title class="text-body-2">
-                최근 게시물 제목 {{ i }}
-              </v-list-item-title>
-            </v-list-item>
+            <template v-if="forumStore.rankingLoading">
+              <v-list-item>
+                <v-skeleton-loader type="list-item-avatar"></v-skeleton-loader>
+              </v-list-item>
+            </template>
+            <template v-else-if="forumStore.weeklyRankingForums.length > 0">
+              <v-list-item
+                v-for="(forum, index) in forumStore.weeklyRankingForums"
+                :key="forum.id"
+                class="weekly-post"
+                @click="viewPost(forum.id)"
+              >
+                <template v-slot:prepend>
+                  <v-avatar
+                    :color="
+                      index === 0
+                        ? 'amber'
+                        : index === 1
+                        ? 'grey-lighten-1'
+                        : index === 2
+                        ? 'orange'
+                        : 'primary'
+                    "
+                    size="24"
+                  >
+                    <span class="text-caption">{{ index + 1 }}</span>
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="text-body-2">
+                  {{ truncateTitle(forum.title) }}
+                </v-list-item-title>
+                <template v-slot:append>
+                  <div class="text-caption text-grey d-flex align-center">
+                    <v-icon size="12" class="mr-1">mdi-eye</v-icon>
+                    {{ forum.viewCount }}
+                    <v-icon size="12" class="ml-2 mr-1">mdi-heart</v-icon>
+                    {{ forum.likeCount }}
+                  </div>
+                </template>
+              </v-list-item>
+            </template>
+            <template v-else>
+              <v-list-item>
+                <v-list-item-title class="text-body-2 text-grey">
+                  아직 랭킹 데이터가 없습니다.
+                </v-list-item-title>
+              </v-list-item>
+            </template>
           </v-list>
         </v-card>
 
@@ -364,7 +474,7 @@ const displayPosts = computed(() => {
 }
 
 .popular-post:hover,
-.recent-post:hover {
+.weekly-post:hover {
   background-color: #f5f5f5;
   cursor: pointer;
 }

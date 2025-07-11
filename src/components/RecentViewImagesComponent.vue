@@ -1,11 +1,17 @@
 <template>
   <v-card
     class="pa-3"
-    style="position: sticky; top: 80px; z-index: 10; max-width: 250px"
+    style="
+      position: sticky;
+      top: 80px;
+      z-index: 30;
+      max-width: 250px;
+      margin: auto;
+    "
     elevation="2"
   >
     <v-card-title class="pa-0 mb-3">
-      <h3 class="text-h6">최근 본 이미지</h3>
+      <h3 class="text-h6 text-center">최근 본 이미지</h3>
     </v-card-title>
 
     <v-divider class="mb-3" />
@@ -52,7 +58,6 @@ const { recentViewItems } = storeToRefs(imageStore);
 function goDetail(id: number) {
   imageStore.viewImageDetail(id);
 }
-
 
 onMounted(() => {
   imageStore.loadRecentViewImages();

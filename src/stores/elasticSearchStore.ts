@@ -1,7 +1,8 @@
 import type { ElasticImageDto } from "@/types/ImageTypes";
 import axios from "axios";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, watch } from "vue";
+import { useImageStore } from "./imageStore";
 
 // 페이지네이션을 포함한 응답 타입 정의
 interface PagedResponse<T> {
@@ -271,6 +272,46 @@ export const useElasticSearchStore = defineStore("elasticSearch", () => {
       await getPopularImages(); // 기본값으로 인기 이미지 로드
     }
   };
+
+  // debounce를 위한 timeout 관리
+  let autocompleteTimeout: number | null = null;
+
+  // 검색 키워드 변경 시 자동완성 실행 (0.5초 debounce)
+  watch(
+    () => searchKeyword.value,
+    (newKeyword) => {
+      // 이전 timeout 취소
+      if (autocompleteTimeout) {
+        clearTimeout(autocompleteTimeout);
+      }
+
+      if (newKeyword && newKeyword.trim()) {
+        // autocompleteQuery를 searchKeyword와 동기화
+        autocompleteQuery.value = newKeyword;
+
+        // 0.5초 후에 자동완성 API 호출
+        autocompleteTimeout = setTimeout(() => {
+          testAutocomplete();
+        }, 500);
+      } else {
+        // 키워드가 없으면 자동완성 결과 즉시 초기화
+        autocompleteSuggestions.value = [];
+      }
+    }
+  );
+
+  const imageStore = useImageStore();
+  watch(
+    () => imageStore.searchQuery,
+    (newKeyword) => {
+      if (autocompleteTimeout) {
+        clearTimeout(autocompleteTimeout);
+      }
+      if (newKeyword && newKeyword.trim()) {
+        searchKeyword.value = newKeyword;
+      }
+    }
+  );
 
   return {
     // 상태
