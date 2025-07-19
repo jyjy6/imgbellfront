@@ -5,7 +5,7 @@ class NotificationSocket {
   private socket: WebSocket | null = null;
   private url: string;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 3;
   private reconnectDelay = 3000;
   private userId: number | null = null;
   private username: string | null = null;
